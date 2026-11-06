@@ -1,8 +1,8 @@
-# McEdit 重置
+# McEdit Next
 
 <img src="mcediticon.ico" width="64" align="right" alt="MCEdit icon">
 
-基于 [MCEdit 2](https://github.com/mcedit/mcedit2) 的重置版本。它把原项目移植到 Python 3.12 和 Qt 6，用来打开、编辑和保存 Minecraft 1.21.1 的世界。
+McEdit Next 是 [MCEdit 2](https://github.com/mcedit/mcedit2) 的重置版本。它把原项目移植到 Python 3.12 和 Qt 6，用来打开、编辑和保存 Minecraft 1.21.1 的世界。
 
 > 本项目处于测试阶段，编辑前请先备份世界。
 >
@@ -46,4 +46,4 @@ BSD 3-Clause，沿用原项目的 [LICENSE.md](LICENSE.md)。原项目版权归 
 
 ---
 
-**English:** McEdit Reset is a fork of MCEdit 2, ported to Python 3.12 and Qt 6, that opens, edits and saves Minecraft 1.21.1 worlds and shows mod blocks through block packs from a NeoForge 1.21.1 companion mod. BSD 3-Clause licensed. Not an official Minecraft product; not approved by or associated with Mojang or Microsoft.
+**English:** McEdit Next is a fork of MCEdit 2, ported to Python 3.12 and Qt 6, that opens, edits and saves Minecraft 1.21.1 worlds and shows mod blocks through block packs from a NeoForge 1.21.1 companion mod. BSD 3-Clause licensed. Not an official Minecraft product; not approved by or associated with Mojang or Microsoft.
