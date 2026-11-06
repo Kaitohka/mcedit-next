@@ -1,0 +1,68 @@
+plugins {
+    id 'java-library'
+    id 'net.neoforged.moddev' version '2.0.148'
+}
+
+version = "${mod_version}+mc${minecraft_version}-neoforge"
+group = 'net.mcedit.exporter'
+
+base {
+    archivesName = 'mcedit_exporter'
+}
+
+java.toolchain.languageVersion = JavaLanguageVersion.of(21)
+
+// The pack format has no Minecraft types and is shared with other game versions.
+sourceSets.main.java.srcDir('../common/src/main/java')
+
+// A small mod for testing the exporter. It only runs with -Pmcedit.testMod, and is not part of the built jar.
+sourceSets {
+    testmod
+}
+
+neoForge {
+    version = project.neo_version
+    addModdingDependenciesTo(sourceSets.testmod)
+
+    parchment {
+        mappingsVersion = project.parchment_mappings_version
+        minecraftVersion = project.parchment_minecraft_version
+    }
+
+    runs {
+        client {
+            client()
+            // Set with -Pmcedit.autoExport=vanilla|mods|all to export once loaded, then exit.
+            if (project.hasProperty('mcedit.autoExport')) {
+                systemProperty 'mcedit.exporter.autoExport', project.property('mcedit.autoExport')
+            }
+            // Set with -Pmcedit.genTestWorld=<name> to create a world for MCEdit's tests, then exit.
+            if (project.hasProperty('mcedit.genTestWorld')) {
+                systemProperty 'mcedit.exporter.genTestWorld', project.property('mcedit.genTestWorld')
+            }
+            // Set with -Pmcedit.checkWorld=<name> to report what the game finds in a world that MCEdit saved, then exit.
+            if (project.hasProperty('mcedit.checkWorld')) {
+                systemProperty 'mcedit.exporter.checkWorld', project.property('mcedit.checkWorld')
+            }
+            // Set with -Pmcedit.genTestWorldCommand=<command> to run a command in that world before exiting.
+            if (project.hasProperty('mcedit.genTestWorldCommand')) {
+                systemProperty 'mcedit.exporter.genTestWorldCommand', project.property('mcedit.genTestWorldCommand')
+            }
+        }
+    }
+
+    mods {
+        mcedit_exporter {
+            sourceSet(sourceSets.main)
+        }
+        if (project.hasProperty('mcedit.testMod')) {
+            mcedit_testmod {
+                sourceSet(sourceSets.testmod)
+            }
+        }
+    }
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+}

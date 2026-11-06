@@ -1,0 +1,22 @@
+
+
+QTreeView::item {
+   border-bottom: 1px solid #d9d9d9;
+}
+
+QTreeView::item:selected:active{
+   background: palette(highlight);
+}
+
+QTreeView::item:selected:!active {
+   background: palette(highlight);
+}
+
+/* Key and mouse bindings in the Controls popup */
+QPushButton[binding="true"]:disabled {
+    color: #000000;
+}
+
+QPushButton[binding="true"]:enabled {
+    background-color: #DDDDFF;
+}

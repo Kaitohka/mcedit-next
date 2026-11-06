@@ -1,0 +1,46 @@
+"""
+    fill
+"""
+
+from PySide6 import QtWidgets
+import logging
+from PySide6 import QtCore
+from mcedit2.command import SimpleRevisionCommand
+from mcedit2.ui.fill import Ui_fillDialog
+from mcedit2.util.showprogress import showProgress
+
+log = logging.getLogger(__name__)
+
+class FillCommandWidget(QtWidgets.QDialog, Ui_fillDialog):
+    def __init__(self, editorSession):
+        super(FillCommandWidget, self).__init__()
+        self.setupUi(self)
+        self.adjustSize()
+        self.blockTypeInput.editorSession = editorSession
+        self.blockTypeInput.block = "minecraft:stone"
+
+# Cache the FillCommandWidget on the session. Gross.
+def getFillWidget(editorSession):
+    widget = getattr(editorSession, '_fillWidget', None)
+    
+    if widget is None:
+        widget = editorSession._fillWidget = FillCommandWidget(editorSession)
+    return widget
+
+
+def fillCommand(editorSession):
+    """
+
+    :type editorSession: mcedit2.editorsession.EditorSession
+    """
+    box = editorSession.currentSelection
+    if box is None or box.volume == 0:
+        return
+
+    widget = getFillWidget(editorSession)
+    if widget.exec():
+        command = SimpleRevisionCommand(editorSession, QtCore.QCoreApplication.translate("FillCommand", "Fill"))
+        with command.begin():
+            task = editorSession.currentDimension.fillBlocksIter(box, widget.blockTypeInput.block)
+            showProgress(QtCore.QCoreApplication.translate("FillCommand", "Filling..."), task)
+        editorSession.pushCommand(command)

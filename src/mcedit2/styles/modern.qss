@@ -1,0 +1,666 @@
+/*
+    The modern themes. Keeps MCEdit's layout - the toolbar of icons with text under them, the tool
+    palette, the dock panels - and draws it flat, with rounded controls and a grass-green accent.
+
+    The words after dollar signs are filled in from the theme's colours by mcedit2/util/theme.py.
+*/
+
+/* The system's own font, as in the classic theme: Microsoft YaHei UI on Chinese Windows. */
+QWidget {
+    color: $text;
+}
+
+QMainWindow, QDialog {
+    background: $window;
+}
+
+QMainWindow::separator {
+    background: $window;
+    width: 5px;
+    height: 5px;
+}
+
+QMainWindow::separator:hover {
+    background: $accent;
+}
+
+QToolTip {
+    background: $raised;
+    color: $text;
+    border: 1px solid $borderStrong;
+    border-radius: 4px;
+    padding: 4px 6px;
+}
+
+/* --- Menus --- */
+
+QMenuBar {
+    background: $panel;
+    border-bottom: 1px solid $border;
+    padding: 2px 4px;
+}
+
+QMenuBar::item {
+    background: transparent;
+    padding: 4px 10px;
+    border-radius: 4px;
+}
+
+QMenuBar::item:selected {
+    background: $hover;
+}
+
+QMenuBar::item:pressed {
+    background: $accentSoft;
+}
+
+QMenu {
+    background: $raised;
+    border: 1px solid $borderStrong;
+    border-radius: 6px;
+    padding: 4px;
+}
+
+QMenu::item {
+    padding: 5px 28px 5px 24px;
+    border-radius: 4px;
+}
+
+QMenu::item:selected {
+    background: $accentSoft;
+    color: $text;
+}
+
+QMenu::item:disabled {
+    color: $textDisabled;
+}
+
+QMenu::separator {
+    height: 1px;
+    background: $border;
+    margin: 4px 8px;
+}
+
+QMenu::indicator {
+    width: 14px;
+    height: 14px;
+    margin-left: 4px;
+    border-radius: 3px;
+}
+
+QMenu::indicator:checked {
+    background: $accent;
+    image: url($icons/check.png);
+}
+
+QMenu::right-arrow {
+    image: url($icons/arrow_right_$arrows.png);
+    width: 10px;
+    height: 10px;
+    margin-right: 6px;
+}
+
+/* --- Toolbars: icons with their names under them, as MCEdit always had --- */
+
+QToolBar {
+    background: $panel;
+    border: none;
+    spacing: 2px;
+    padding: 3px;
+}
+
+QToolBar::separator {
+    background: $border;
+    width: 1px;
+    height: 1px;
+    margin: 4px 6px;
+}
+
+QToolButton {
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 6px;
+    padding: 3px 5px;
+    color: $text;
+}
+
+QToolButton:hover {
+    background: $hover;
+    border-color: $border;
+}
+
+QToolButton:pressed {
+    background: $pressed;
+}
+
+QToolButton:checked {
+    background: $accentSoft;
+    border-color: $accent;
+}
+
+QToolButton:disabled {
+    color: $textDisabled;
+}
+
+QToolButton[popupMode="2"] {
+    padding-right: 14px;
+}
+
+QToolButton::menu-indicator {
+    image: url($icons/arrow_down_$arrows.png);
+    width: 8px;
+    height: 8px;
+    subcontrol-origin: padding;
+    subcontrol-position: bottom right;
+    right: 3px;
+    bottom: 3px;
+}
+
+QToolButton::menu-button {
+    border: none;
+    width: 14px;
+}
+
+QToolButton::menu-arrow {
+    image: url($icons/arrow_down_$arrows.png);
+    width: 8px;
+    height: 8px;
+}
+
+/* The tool palette on the left: the current tool is marked in green. */
+QToolBar#toolsToolBar {
+    background: $panel;
+    border-right: 1px solid $border;
+    padding: 4px 3px;
+}
+
+QToolBar#toolsToolBar QToolButton {
+    padding: 4px 2px;
+    margin: 1px 0;
+}
+
+QToolBar#toolsToolBar QToolButton:checked {
+    background: $accentSoft;
+    border: 1px solid $accent;
+}
+
+QToolBar#panelsToolBar {
+    border-bottom: 1px solid $border;
+}
+
+/* --- Dock panels --- */
+
+QDockWidget {
+    color: $text;
+    titlebar-close-icon: url($icons/close_$arrows.png);
+    titlebar-normal-icon: url($icons/float_$arrows.png);
+}
+
+QDockWidget::title {
+    background: $header;
+    border: 1px solid $border;
+    border-bottom: 1px solid $accentLine;
+    border-top-left-radius: 6px;
+    border-top-right-radius: 6px;
+    padding: 5px 8px;
+    text-align: left;
+}
+
+QDockWidget::close-button, QDockWidget::float-button {
+    background: transparent;
+    border: none;
+    border-radius: 3px;
+    padding: 2px;
+    icon-size: 12px;
+}
+
+QDockWidget::close-button:hover, QDockWidget::float-button:hover {
+    background: $hover;
+}
+
+/* The title bar that the modern themes give dock panels (widgets/mcedockwidget.py) */
+QWidget#dockTitleBar {
+    background: $header;
+    border: 1px solid $border;
+    border-bottom: 1px solid $accentLine;
+    border-top-left-radius: 6px;
+    border-top-right-radius: 6px;
+}
+
+QLabel#dockTitleLabel {
+    color: $text;
+    font-weight: 600;
+}
+
+QToolButton#dockTitleButton {
+    padding: 3px;
+    border-radius: 4px;
+    border: 1px solid transparent;
+}
+
+QToolButton#dockTitleButton:hover {
+    background: $hover;
+    border-color: $border;
+}
+
+QDockWidget > QWidget {
+    background: $panel;
+    border: 1px solid $border;
+    border-top: none;
+}
+
+QScrollArea {
+    background: $panel;
+    border: none;
+}
+
+QScrollArea > QWidget > QWidget {
+    background: $panel;
+}
+
+/* --- Tabs --- */
+
+QTabWidget::pane {
+    border: 1px solid $border;
+    border-radius: 6px;
+    top: -1px;
+    background: $panel;
+}
+
+QTabBar::tab {
+    background: transparent;
+    color: $textDim;
+    padding: 5px 14px;
+    border: 1px solid transparent;
+    border-bottom: 2px solid transparent;
+    margin-right: 2px;
+}
+
+QTabBar::tab:hover {
+    color: $text;
+    background: $hover;
+    border-top-left-radius: 5px;
+    border-top-right-radius: 5px;
+}
+
+QTabBar::tab:selected {
+    color: $text;
+    background: $panel;
+    border: 1px solid $border;
+    border-bottom: 2px solid $accent;
+    border-top-left-radius: 5px;
+    border-top-right-radius: 5px;
+}
+
+/* --- Buttons --- */
+
+QPushButton {
+    background: $raised;
+    border: 1px solid $borderStrong;
+    border-radius: 5px;
+    padding: 4px 14px;
+    min-height: 18px;
+}
+
+QPushButton:hover {
+    background: $hover;
+    border-color: $accent;
+}
+
+QPushButton:pressed {
+    background: $pressed;
+}
+
+QPushButton:checked {
+    background: $accentSoft;
+    border-color: $accent;
+}
+
+QPushButton:disabled {
+    color: $textDisabled;
+    border-color: $border;
+    background: $panel;
+}
+
+QPushButton:default {
+    border-color: $accent;
+}
+
+QPushButton:flat {
+    background: transparent;
+    border: none;
+}
+
+/* The big Edit button of the world list */
+QPushButton#editButton {
+    background: $accent;
+    color: $accentText;
+    border: 1px solid $accent;
+    font-weight: 600;
+    padding: 6px 22px;
+}
+
+QPushButton#editButton:hover {
+    background: $accentHover;
+}
+
+QPushButton#editButton:disabled {
+    background: $panel;
+    color: $textDisabled;
+    border-color: $border;
+}
+
+/* Key and mouse bindings in the Controls popup */
+QPushButton[binding="true"] {
+    background: $base;
+    border-color: $border;
+    padding: 2px 8px;
+}
+
+/* --- Text and number fields --- */
+
+QLineEdit, QComboBox, QPlainTextEdit, QTextEdit {
+    background: $base;
+    border: 1px solid $border;
+    border-radius: 4px;
+    padding: 1px 4px;
+    selection-background-color: $accentSoft;
+    selection-color: $text;
+}
+
+QLineEdit:hover, QComboBox:hover {
+    border-color: $borderStrong;
+}
+
+QLineEdit:focus, QComboBox:focus, QPlainTextEdit:focus, QTextEdit:focus {
+    border-color: $accent;
+}
+
+QLineEdit:disabled, QComboBox:disabled {
+    color: $textDisabled;
+    background: $panel;
+}
+
+/* Spin boxes are drawn by Fusion with the theme's palette: styled here, Qt makes them much wider. */
+
+QComboBox {
+    padding-right: 18px;
+    min-height: 18px;
+}
+
+QComboBox::drop-down {
+    subcontrol-origin: padding;
+    subcontrol-position: center right;
+    width: 18px;
+    border: none;
+}
+
+QComboBox::down-arrow {
+    image: url($icons/arrow_down_$arrows.png);
+    width: 9px;
+    height: 9px;
+}
+
+QComboBox QAbstractItemView {
+    background: $raised;
+    border: 1px solid $borderStrong;
+    border-radius: 4px;
+    padding: 2px;
+    selection-background-color: $accentSoft;
+    selection-color: $text;
+    outline: none;
+}
+
+/* --- Check boxes and radio buttons --- */
+
+QCheckBox, QRadioButton {
+    spacing: 6px;
+    background: transparent;
+}
+
+QCheckBox::indicator, QRadioButton::indicator, QTreeView::indicator, QTableView::indicator, QListView::indicator {
+    width: 14px;
+    height: 14px;
+    background: $base;
+    border: 1px solid $borderStrong;
+}
+
+QCheckBox::indicator, QTreeView::indicator, QTableView::indicator, QListView::indicator {
+    border-radius: 3px;
+}
+
+QRadioButton::indicator {
+    border-radius: 8px;
+}
+
+QCheckBox::indicator:hover, QRadioButton::indicator:hover {
+    border-color: $accent;
+}
+
+QCheckBox::indicator:checked, QTreeView::indicator:checked, QTableView::indicator:checked, QListView::indicator:checked {
+    background: $accent;
+    border-color: $accent;
+    image: url($icons/check.png);
+}
+
+QCheckBox::indicator:indeterminate {
+    background: $accent;
+    border-color: $accent;
+    image: url($icons/partial.png);
+}
+
+QRadioButton::indicator:checked {
+    background: qradialgradient(cx:0.5, cy:0.5, radius:0.5, fx:0.5, fy:0.5,
+                                stop:0 $accentText, stop:0.35 $accentText, stop:0.45 $accent, stop:1 $accent);
+    border-color: $accent;
+}
+
+QCheckBox:disabled, QRadioButton:disabled {
+    color: $textDisabled;
+}
+
+/* --- Lists, trees and tables --- */
+
+QAbstractItemView {
+    background: $base;
+    alternate-background-color: $alternate;
+    border: 1px solid $border;
+    border-radius: 4px;
+    selection-background-color: $accentSoft;
+    selection-color: $text;
+    outline: none;
+}
+
+QAbstractItemView::item {
+    padding: 2px 4px;
+}
+
+QAbstractItemView::item:hover {
+    background: $hover;
+}
+
+QAbstractItemView::item:selected {
+    background: $accentSoft;
+    color: $text;
+}
+
+QTreeView::item {
+    border-bottom: 1px solid $alternate;
+}
+
+QTreeView::branch:has-children:!has-siblings:closed,
+QTreeView::branch:closed:has-children:has-siblings {
+    image: url($icons/arrow_right_$arrows.png);
+}
+
+QTreeView::branch:open:has-children:!has-siblings,
+QTreeView::branch:open:has-children:has-siblings {
+    image: url($icons/arrow_down_$arrows.png);
+}
+
+QHeaderView {
+    background: $header;
+    border: none;
+}
+
+QHeaderView::section {
+    background: $header;
+    color: $textDim;
+    border: none;
+    border-right: 1px solid $border;
+    border-bottom: 1px solid $border;
+    padding: 4px 6px;
+}
+
+QTableCornerButton::section {
+    background: $header;
+    border: none;
+}
+
+/* --- Group boxes, splitters, progress, sliders --- */
+
+QGroupBox {
+    border: 1px solid $border;
+    border-radius: 6px;
+    margin-top: 10px;
+    padding: 8px 6px 6px 6px;
+    background: transparent;
+}
+
+QGroupBox::title {
+    subcontrol-origin: margin;
+    subcontrol-position: top left;
+    left: 8px;
+    padding: 0 4px;
+    color: $textDim;
+}
+
+QSplitter::handle {
+    background: $border;
+}
+
+QSplitter::handle:hover {
+    background: $accent;
+}
+
+QProgressBar {
+    background: $base;
+    border: 1px solid $border;
+    border-radius: 5px;
+    text-align: center;
+    min-height: 14px;
+}
+
+QProgressBar::chunk {
+    background: $accent;
+    border-radius: 4px;
+}
+
+QSlider::groove:horizontal {
+    height: 4px;
+    background: $border;
+    border-radius: 2px;
+}
+
+QSlider::sub-page:horizontal {
+    background: $accent;
+    border-radius: 2px;
+}
+
+QSlider::handle:horizontal {
+    background: $text;
+    border: 2px solid $accent;
+    width: 10px;
+    height: 10px;
+    margin: -5px 0;
+    border-radius: 7px;
+}
+
+QSlider::groove:vertical {
+    width: 4px;
+    background: $border;
+    border-radius: 2px;
+}
+
+QSlider::add-page:vertical {
+    background: $accent;
+    border-radius: 2px;
+}
+
+QSlider::handle:vertical {
+    background: $text;
+    border: 2px solid $accent;
+    width: 10px;
+    height: 10px;
+    margin: 0 -5px;
+    border-radius: 7px;
+}
+
+/* --- Scroll bars --- */
+
+QScrollBar:vertical {
+    background: transparent;
+    width: 11px;
+    margin: 0;
+}
+
+QScrollBar:horizontal {
+    background: transparent;
+    height: 11px;
+    margin: 0;
+}
+
+QScrollBar::handle:vertical {
+    background: $scrollHandle;
+    border-radius: 4px;
+    min-height: 28px;
+    margin: 2px;
+}
+
+QScrollBar::handle:horizontal {
+    background: $scrollHandle;
+    border-radius: 4px;
+    min-width: 28px;
+    margin: 2px;
+}
+
+QScrollBar::handle:hover {
+    background: $textDim;
+}
+
+QScrollBar::add-line, QScrollBar::sub-line {
+    width: 0;
+    height: 0;
+    border: none;
+    background: none;
+}
+
+QScrollBar::add-page, QScrollBar::sub-page {
+    background: none;
+}
+
+/* --- Status bar --- */
+
+QStatusBar {
+    background: $panel;
+    border-top: 1px solid $border;
+    color: $textDim;
+}
+
+QStatusBar QLabel {
+    color: $textDim;
+    padding: 0 6px;
+}
+
+QStatusBar::item {
+    border: none;
+    border-left: 1px solid $border;
+}
+
+QLabel {
+    background: transparent;
+}
+
+QLabel:disabled {
+    color: $textDisabled;
+}

@@ -1,0 +1,20 @@
+{
+  "variants": {
+    "facing=north": {
+      "model": "mcedit_testmod:block/oriented",
+      "y": 0
+    },
+    "facing=east": {
+      "model": "mcedit_testmod:block/oriented",
+      "y": 90
+    },
+    "facing=south": {
+      "model": "mcedit_testmod:block/oriented",
+      "y": 180
+    },
+    "facing=west": {
+      "model": "mcedit_testmod:block/oriented",
+      "y": 270
+    }
+  }
+}

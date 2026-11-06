@@ -1,0 +1,9 @@
+# Direct dependencies of the Python 3 upgrade. Pinned versions live in requirements-py3.txt.
+numpy
+cython
+setuptools
+PySide6-Essentials   # QtCore, QtGui, QtWidgets, QtOpenGL, QtOpenGLWidgets, pyside6-uic
+PyOpenGL
+lz4                  # region files with compression type 4
+arrow                # date formatting used by the world list and analyze export
+pytest

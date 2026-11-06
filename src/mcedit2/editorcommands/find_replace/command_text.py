@@ -1,0 +1,24 @@
+"""
+    command_text
+"""
+
+import logging
+from PySide6 import QtCore, QtWidgets
+
+from mcedit2.ui.find_replace_commands import Ui_findCommandsWidget
+
+log = logging.getLogger(__name__)
+
+
+class FindReplaceCommandWidget(QtWidgets.QWidget, Ui_findCommandsWidget):
+    def __init__(self):
+        super(FindReplaceCommandWidget, self).__init__()
+        self.setupUi(self)
+
+
+class FindReplaceCommandText(QtCore.QObject):
+    def __init__(self, editorSession, dialog, *args, **kwargs):
+        super(FindReplaceCommandText, self).__init__(*args, **kwargs)
+        self.editorSession = editorSession
+        self.dialog = dialog
+        self.widget = FindReplaceCommandWidget()

@@ -1,0 +1,9 @@
+modLoader = "javafml"
+loaderVersion = "[1,)"
+license = "BSD-3-Clause"
+
+[[mods]]
+modId = "mcedit_testmod"
+version = "1.0"
+displayName = "MCEdit Exporter Test Mod"
+description = "One block of each kind that the exporter has to deal with. For testing only."

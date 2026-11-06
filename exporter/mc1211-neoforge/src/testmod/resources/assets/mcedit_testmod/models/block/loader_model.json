@@ -1,0 +1,15 @@
+{
+  "loader": "neoforge:composite",
+  "parent": "minecraft:block/block",
+  "textures": {
+    "particle": "mcedit_testmod:block/loader_model"
+  },
+  "children": {
+    "cube": {
+      "parent": "minecraft:block/cube_all",
+      "textures": {
+        "all": "mcedit_testmod:block/loader_model"
+      }
+    }
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "parent": "minecraft:block/orientable_with_bottom",
+  "textures": {
+    "front": "mcedit_testmod:block/plain",
+    "side": "mcedit_testmod:block/oriented",
+    "top": "mcedit_testmod:block/oriented",
+    "bottom": "mcedit_testmod:block/oriented"
+  }
+}
