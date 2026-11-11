@@ -20,6 +20,7 @@ from mceditlib.anvil import entities
 from mceditlib.anvil.entities import PCEntityRef, PCTileEntityRef, ItemStackRef
 from mceditlib.anvil.worldfolder import AnvilWorldFolder
 from mceditlib.blocktypes import PCBlockTypeSet, BlockType, VERSION_1_8, VERSION_1_7
+from mceditlib.blocktypes import legacy_packs, pack_library
 from mceditlib.geometry import Vector
 from mceditlib.nbt import NBTFormatError
 from mceditlib.nbtattr import NBTCompoundRef
@@ -489,8 +490,8 @@ class AnvilWorldAdapter(object):
                 continue  # older worlds have no DataVersion, and loadMetadata handles damaged files
             if dataVersion >= FIRST_UNSUPPORTED_DATA_VERSION:
                 raise LevelFormatError("This world was saved by a version of Minecraft (data version %d) that "
-                                       "MCEdit cannot open. It can open worlds from Minecraft 1.12 and earlier, "
-                                       "and from 1.21 and 1.21.1." % dataVersion)
+                                       "MCEdit cannot open. It can open worlds from the releases of Minecraft "
+                                       "from 1.7.10 to 26.3, but not from snapshots." % dataVersion)
             return
 
     def __repr__(self):
@@ -600,6 +601,7 @@ class AnvilWorldAdapter(object):
 
         blocktypes = PCBlockTypeSet(itemStackVersion)
         self.blocktypes = blocktypes
+        self.packSelection = pack_library.PackSelection()
 
         metadataTag = self.metadata.metadataTag
         fml = metadataTag.get('FML')
@@ -607,63 +609,59 @@ class AnvilWorldAdapter(object):
             return
 
         itemTypes = blocktypes.itemTypes
-
         itemdata = fml.get('ItemData')  # MC 1.7
         if itemdata is not None:
-            count = 0
-            log.info("Adding block IDs from FML for MC 1.7")
-            replacedIDs = []
             for entry in itemdata:
-                ID = entry['V'].value
                 name = entry['K'].value
                 magic, name = name[0], name[1:]
-                if magic == u'\x01':  # 0x01 = blocks
+                if magic == u'\x02' and not name.startswith("minecraft:"):  # 0x02 = items
+                    itemTypes.addFMLIDMapping(name, entry['V'].value)
 
-                    if not name.startswith("minecraft:"):
-                        # we load 1.9 block IDs and mappings by default
-                        # FML IDs should be allowed to override some of them for 1.8 blocks not in 1.7.
-                        count += 1
-                        replacedIDs.append(ID)
-                        fakeState = '[meta=0]'
-                        nameAndState = name + fakeState
-                        log.debug("FML1.7: Adding %s = %d", name, ID)
+        # Blocks of mods are given their numbers in this world, and names that are all that is known of them...
+        blockIDs = legacy_packs.fmlBlockIDs(metadataTag)
+        replacedIDs = []
+        for name, ID in blockIDs.items():
+            if not name.startswith("minecraft:"):
+                self._addFMLBlock(blocktypes, name, ID)
+                replacedIDs.append(ID)
+        blocktypes.discardIDs(set(replacedIDs))
+        blocktypes.addBlocktypes(BlockType(newID, 0, blocktypes) for newID in replacedIDs)
+        log.info("Added %d blocks from FML.", len(replacedIDs))
 
+        # ...until a block pack exported from the same game says more.
+        self.packSelection = legacy_packs.selectLegacyPacks(metadataTag)
+        for problem in self.packSelection.problems:
+            log.warning("Block pack: %s", problem)
+        legacy_packs.applyLegacyPacks(blocktypes, self.packSelection.packs, blockIDs)
 
-                        for vanillaMeta in range(15):
-                            # Remove existing Vanilla defs
-                            vanillaNameAndState = blocktypes.statesByID.get((ID, vanillaMeta))
-                            blocktypes.blockJsons.pop(vanillaNameAndState, None)
+    @staticmethod
+    def _addFMLBlock(blocktypes, name, ID):
+        """ Give a block of a mod its number, in place of any of the game's blocks that had it. """
+        fakeState = '[meta=0]'
+        nameAndState = name + fakeState
+        log.debug("FML: Adding %s = %d", name, ID)
+        for vanillaMeta in range(16):
+            # Remove existing Vanilla defs
+            vanillaNameAndState = blocktypes.statesByID.get((ID, vanillaMeta))
+            blocktypes.blockJsons.pop(vanillaNameAndState, None)
 
-                            # Also remove Vanilla name<->state mapping
-                            blocktypes.IDsByState.pop(vanillaNameAndState, None)
-                            vanillaName = blocktypes.namesByID.get(ID)
-                            blocktypes.IDsByName.pop(vanillaName, None)
-                            blocktypes.defaultBlockstates.pop(vanillaName, None)
+            # Also remove Vanilla name<->state mapping
+            blocktypes.IDsByState.pop(vanillaNameAndState, None)
+            vanillaName = blocktypes.namesByID.get(ID)
+            blocktypes.IDsByName.pop(vanillaName, None)
+            blocktypes.defaultBlockstates.pop(vanillaName, None)
 
-                        blocktypes.IDsByState[nameAndState] = ID, 0
-                        blocktypes.statesByID[ID, 0] = nameAndState
-                        blocktypes.IDsByName[name] = ID
-                        blocktypes.namesByID[ID] = name
-                        blocktypes.defaultBlockstates[name] = fakeState
-
-                        blocktypes.blockJsons[nameAndState] = {
-                            'displayName': name,
-                            'internalName': name,
-                            'blockState': '[meta=0]',
-                            'unknown': True,
-                        }
-
-                if magic == u'\x02':  # 0x02 = items
-                    if not name.startswith("minecraft:"):
-                        itemTypes.addFMLIDMapping(name, ID)
-
-            replacedIDsSet = set(replacedIDs)
-            blocktypes.discardIDs(replacedIDsSet)
-            blocktypes.addBlocktypes(BlockType(newID, 0, blocktypes) for newID in replacedIDs)
-
-            log.info("Added %d blocks.", count)
-
-
+        blocktypes.IDsByState[nameAndState] = ID, 0
+        blocktypes.statesByID[ID, 0] = nameAndState
+        blocktypes.IDsByName[name] = ID
+        blocktypes.namesByID[ID] = name
+        blocktypes.defaultBlockstates[name] = fakeState
+        blocktypes.blockJsons[nameAndState] = {
+            'displayName': name,
+            'internalName': name,
+            'blockState': '[meta=0]',
+            'unknown': True,
+        }
 
     def _createMetadataTag(self, random_seed=None):
         """
@@ -991,6 +989,9 @@ class AnvilWorldAdapter(object):
 
     # --- Players ---
 
+    # Where the players' files are. Since Minecraft 26.1 it is players/data.
+    playerDataFolder = "playerdata"
+
     def listPlayers(self):
         """
         List the names/UUIDs of all players in this world
@@ -999,9 +1000,9 @@ class AnvilWorldAdapter(object):
         :return:
         :rtype: Iterator of unicode
         """
-        for f in self.selectedRevision.listFolder("playerdata"):
+        for f in self.selectedRevision.listFolder(self.playerDataFolder):
             if f.endswith(".dat"):
-                yield f[11:-4]
+                yield f.rpartition("/")[2][:-4]
 
         if "Player" in self.metadata.rootTag:
             yield ""
@@ -1029,7 +1030,7 @@ class AnvilWorldAdapter(object):
                 return playerTag
             raise PlayerNotFound(playerUUID)
         else:
-            playerFilePath = "playerdata/%s.dat" % playerUUID
+            playerFilePath = "%s/%s.dat" % (self.playerDataFolder, playerUUID)
             if self.selectedRevision.containsFile(playerFilePath):
                 # multiplayer world, found this player
                 playerTag = nbt.load(buf=self.selectedRevision.readFile(playerFilePath))
@@ -1042,7 +1043,7 @@ class AnvilWorldAdapter(object):
             # sync metadata?
             self.metadata.dirty = True
         else:
-            self.selectedRevision.writeFile("playerdata/%s.dat" % playerUUID, tag.save())
+            self.selectedRevision.writeFile("%s/%s.dat" % (self.playerDataFolder, playerUUID), tag.save())
 
     def createPlayer(self, playerUUID=""):
         """
@@ -1057,7 +1058,7 @@ class AnvilWorldAdapter(object):
         if self.readonly:
             raise IOError("World is opened read only.")
 
-        playerFilePath = "playerdata/%s.dat" % playerUUID
+        playerFilePath = "%s/%s.dat" % (self.playerDataFolder, playerUUID)
 
         if playerUUID == "":
             if "Player" in self.metadata.rootTag["Data"]:

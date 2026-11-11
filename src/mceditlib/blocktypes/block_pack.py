@@ -135,7 +135,8 @@ class BlockPack(object):
 
     @property
     def dataVersion(self):
-        return self.manifest["dataVersion"]
+        """ The data version of the game that exported the pack, or 0 for one from before 1.9, which had none. """
+        return self.manifest.get("dataVersion", 0)
 
     @property
     def mods(self):

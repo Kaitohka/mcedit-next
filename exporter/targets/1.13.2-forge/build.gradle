@@ -1,0 +1,30 @@
+// ForgeGradle is the only build tool for Forge 1.13.2, and needs a Gradle of its own: this target has its own
+// wrapper, for Gradle 8.8.
+plugins {
+    id 'java'
+    id 'net.minecraftforge.gradle' version '[6.0.24,6.2)'
+}
+
+ext.minecraftVersion = '1.13.2'
+ext.loader = 'forge'
+ext.javaRelease = 8
+// Mojang published no names for 1.13.2, so all of the game's names are MCP's.
+ext.versionFolder = '1.13.2-forge'
+apply from: '../shared.gradle'
+
+base.archivesName = 'mcedit_exporter-1.13.2-forge'
+
+minecraft {
+    mappings channel: 'stable', version: '47-1.13.2'
+}
+
+repositories {
+    maven { url = 'https://maven.minecraftforge.net/' }
+}
+
+dependencies {
+    minecraft 'net.minecraftforge:forge:1.13.2-25.0.223'
+}
+
+// The jar build_universal.py takes is the one with Forge's names for the game, as it has them at run time.
+jar.finalizedBy('reobfJar')

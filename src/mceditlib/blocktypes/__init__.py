@@ -135,6 +135,7 @@ class BlockTypeSet(object):
         self.allBlocks = SortedSet()
 
         self.blockJsons = {}
+        self.metaAliases = {}  # (id, meta) -> the listed meta whose state it has, for metas the tables leave out
         self.IDsByState = {}  # "internalName[blockstates]" -> (id, meta)
         self.statesByID = {}  # (id, meta) -> "internalName[blockstates]"
 
@@ -169,6 +170,9 @@ class BlockTypeSet(object):
             'particleTexture': None,  # texture to use if the block turns out to have no usable model
             'modelSource': None,  # "fallback" if a block pack says that its model files can't be used
             'hasBlockstateFile': False,  # whether a block pack found a blockstates file for this block
+            # a model of the faces the game drew, written by the export mod: all there is to draw where modelSource is
+            # "generated", and drawn with the block's own models otherwise
+            'generatedModel': None,
         }
 
         self.aka = defaultdict(lambda: "")
@@ -339,6 +343,9 @@ class BlockTypeSet(object):
             self.IDsByState[nameAndState] = ID, meta
             self.IDsByName[internalName] = ID
         self.statesByID = {v: k for (k, v) in self.IDsByState.items()}
+        for (ID, meta), alias in self.metaAliases.items():
+            if (ID, alias) in self.statesByID and (ID, meta) not in self.statesByID:
+                self.statesByID[ID, meta] = self.statesByID[ID, alias]
         self.namesByID = {v: k for (k, v) in self.IDsByName.items()}
 
     def addBlockIDsFromSchematicTag(self, mapping):
@@ -427,6 +434,15 @@ class BlockTypeSet(object):
         ]:  # does not have data axis
             if key in blockJson:
                 array = getattr(self, key)
+                if key == 'renderType':
+                    # One render type for all sixteen data values: a block some of whose states have a model made
+                    # from what the game draws keeps that, as the states without one are drawn as unknown blocks
+                    # either way, where otherwise the last state read would decide for them all.
+                    modelIDs = self.__dict__.setdefault('_generatedModelIDs', set())
+                    if blockJson.get('generatedModel'):
+                        modelIDs.add(ID)
+                    elif ID in modelIDs:
+                        continue
                 array[ID] = blockJson[key]
 
         color = blockJson.get('renderColor')
@@ -442,6 +458,15 @@ class BlockTypeSet(object):
                                                            color & 0xff)
 
 
+# States that idmapping_raw_1_12.json lists at a meta the game reads them from but never saves them with, as
+# (ID, that meta): the meta the game uses. From 1.9 the game reads a block with such a meta as air, so these must be
+# saved with the game's own. Found from the 1.12.2 debug world, where the game places every state with its own meta.
+GAME_METAS_1_12 = {
+    (54, 0): 2, (61, 0): 2, (62, 0): 2, (65, 0): 2, (68, 0): 2, (90, 0): 1, (130, 0): 2, (146, 0): 2, (177, 0): 2,
+    (132, 0): 2, (132, 1): 3, (132, 4): 6, (132, 5): 7, (132, 8): 10, (132, 9): 11, (132, 12): 14,
+}
+
+
 class PCBlockTypeSet(BlockTypeSet):
     def __init__(self, itemStackVersion=None):
         super(PCBlockTypeSet, self).__init__()
@@ -449,10 +474,48 @@ class PCBlockTypeSet(BlockTypeSet):
         self.name = "Alpha"
         self.addIDMappingFromJSON(getJsonFile("idmapping_raw_1_12.json"))
         self.addIDMappingFromJSON(getJsonFile("idmapping.json"))
+        self._useTheGamesMetas()
         self.addBlocksFromJSON(getJsonFile("minecraft_raw_1_12.json"))
         self.addBlocksFromJSON(getJsonFile("minecraft.json"))
+        self.addMetaAliases()
 
         self.itemTypes = itemtypes.PCItemTypeSet()
+
+    def _useTheGamesMetas(self):
+        """ Give the states in GAME_METAS_1_12 the game's metas. The old ones still read as the same states. """
+        for (ID, listed), meta in GAME_METAS_1_12.items():
+            state = self.statesByID.get((ID, listed))
+            if state is not None and self.IDsByState.get(state) == (ID, listed) and (ID, meta) not in self.statesByID:
+                self.IDsByState[state] = ID, meta
+        self.statesByID = {v: k for (k, v) in self.IDsByState.items()}
+
+    def addMetaAliases(self):
+        """
+        The tables list one meta for each block state, but the game reads other metas as some of the same states:
+        a chest with meta 2 faces north just as one with meta 0 does, and the top of any double plant is meta 8
+        with other bits that mean nothing. Each meta not listed is given the state of the listed meta whose bits
+        it has the most of, and so the larger of two with as many. They are kept in metaAliases as
+        (ID, meta) -> listed meta, and statesByID gives them that meta's state.
+        """
+        listed = defaultdict(set)
+        for ID, meta in self.statesByID:
+            listed[ID].add(meta)
+        for ID, metas in listed.items():
+            for meta in range(16):
+                if meta in metas:
+                    continue
+                if (ID, meta) in GAME_METAS_1_12 and GAME_METAS_1_12[ID, meta] in metas:
+                    alias = GAME_METAS_1_12[ID, meta]
+                else:
+                    candidates = [m for m in metas if m & meta == m]
+                    if not candidates:
+                        continue
+                    alias = max(candidates, key=lambda m: (bin(m).count("1"), m))
+                self.metaAliases[ID, meta] = alias
+                self.statesByID[ID, meta] = self.statesByID[ID, alias]
+                self.renderColor[ID, meta] = self.renderColor[ID, alias]
+                self.mapColor[ID, meta] = self.mapColor[ID, alias]
+                self.stateFlags[ID * 16 + meta] = self.stateFlags[ID * 16 + alias]
 
 
 VERSION_1_7 = 17

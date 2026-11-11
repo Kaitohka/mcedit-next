@@ -31,6 +31,20 @@ def isStoreName(dimName):
     return splitStore(dimName)[1] != "region"
 
 
+# Since Minecraft 26.1 the game's own dimensions are kept in dimensions/minecraft/ instead of the world folder,
+# DIM-1 and DIM1. The rest of MCEdit still calls them by their old names.
+DIMENSIONS_FOLDER_LAYOUT = {
+    "": "dimensions/minecraft/overworld",
+    "DIM-1": "dimensions/minecraft/the_nether",
+    "DIM1": "dimensions/minecraft/the_end",
+}
+
+
+def usesDimensionsFolder(filename):
+    """ Whether the world in the given folder keeps the game's own dimensions in dimensions/minecraft/. """
+    return os.path.isdir(os.path.join(filename, *DIMENSIONS_FOLDER_LAYOUT[""].split("/")))
+
+
 class AnvilWorldFolder(object):
     def __init__(self, filename, create=False, readonly=False, externalChunks=False):
         '''
@@ -52,6 +66,9 @@ class AnvilWorldFolder(object):
         self.readonly = readonly
         self.externalChunks = externalChunks
         self.regionFiles = {}
+        # Where each dimension is, for those not in the folder of the same name. A folder that holds an undo
+        # revision keeps every dimension under its plain name.
+        self.dimensionFolders = DIMENSIONS_FOLDER_LAYOUT if not create and usesDimensionsFolder(filename) else {}
         self._dimensionNames = set(self._findDimensions())
         self._regionPositionsByDim = defaultdict(set)
         self._regionPositionsByDim.update({dimName: set(self._listRegionFiles(dimName))
@@ -129,6 +146,15 @@ class AnvilWorldFolder(object):
     # --- Region files and dimensions ---
 
     def _findDimensions(self):
+        for found in self._findDimensionFolders():
+            dimName, _ = splitStore(found)
+            store = found[len(dimName):]
+            for name, folder in self.dimensionFolders.items():
+                if dimName == folder:
+                    dimName = name
+            yield dimName + store
+
+    def _findDimensionFolders(self):
         yield ""
         worldDirs = os.listdir(self.filename)
         for dirname in worldDirs:
@@ -162,6 +188,7 @@ class AnvilWorldFolder(object):
 
     def getRegionFolderPath(self, dimName):
         dimName, folder = splitStore(dimName)
+        dimName = self.dimensionFolders.get(dimName, dimName)
         if dimName == "":
             return self.getFolderPath(folder)
         else:

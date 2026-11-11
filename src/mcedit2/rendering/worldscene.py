@@ -14,6 +14,7 @@ from mcedit2.rendering import chunkupdate
 from mcedit2.rendering.players import PlayersNode
 from mcedit2.rendering.scenegraph import scenenode
 from mcedit2.rendering import renderstates
+from mcedit2.rendering.chunkmeshes.entity import chest
 from mcedit2.rendering.chunknode import ChunkNode, ChunkGroupNode
 from mcedit2.rendering.chunkupdate import ChunkRenderInfo
 from mcedit2.rendering.depths import DepthOffsets
@@ -70,6 +71,7 @@ class SceneUpdateTask(object):
 
         self.mapTextures = {}
         self.modelTextures = {}
+        self._chestsComeInHalves = None
 
         self.renderType = self.worldScene.dimension.blocktypes.renderType
 
@@ -173,18 +175,65 @@ class SceneUpdateTask(object):
             self.mapTextures[mapID] = mapTex
             return mapTex
 
+    def _hasResource(self, path):
+        try:
+            self.textureAtlas.resourceLoader.openStream(path).close()
+            return True
+        except Exception:
+            return False
+
+    def chestsComeInHalves(self):
+        """ True from 1.15, where each half of a double chest has its own texture, in a new layout. """
+        if self._chestsComeInHalves is None:
+            self._chestsComeInHalves = self._hasResource(chest.NEW_LAYOUT_MARK)
+        return self._chestsComeInHalves
+
     def getModelTexture(self, texturePath):
         if texturePath in self.modelTextures:
             return self.modelTextures[texturePath]
 
+        data = None
+        for path in [texturePath] + ENTITY_TEXTURES_SINCE_MOVED.get(texturePath, []):
+            try:
+                data = self.textureAtlas.resourceLoader.openStream(path).read()
+                break
+            except Exception:
+                continue
         try:
-            w, h, rgba = loadPNGData(self.textureAtlas.resourceLoader.openStream(texturePath).read())
+            if data is None:
+                raise IOError("Not found in the game's assets")
+            w, h, rgba = loadPNGData(data)
+            if texturePath in chest.CHEST_TEXTURES and self.chestsComeInHalves():
+                # loadPNGData gives the bottom row first.
+                shape = numpy.asarray(rgba).shape
+                image = numpy.asarray(rgba).reshape(h, w, 4)
+                boxes = chest.CHEST_TEXTURES[texturePath]
+                rgba = chest.chestTextureInOldLayout(image[::-1], boxes)[::-1].reshape(shape)
         except Exception as e:
             log.exception("Model texture %s could not be loaded", texturePath)
+            self.modelTextures[texturePath] = None  # so as not to try again for every chunk
         else:
             modelTex = Texture(image=rgba[::-1], width=w, height=h)
             self.modelTextures[texturePath] = modelTex
             return modelTex
+
+
+# Where other versions of the game keep textures that models name by older paths, to try in turn. 1.21.5 gave some
+# animals a texture for each climate, and 26.1 renamed them again. Villagers lost these professions in 1.14.
+ENTITY_TEXTURES_SINCE_MOVED = {
+    "assets/minecraft/textures/entity/%s" % old: ["assets/minecraft/textures/entity/%s" % new for new in moved]
+    for old, moved in dict({
+        "pig/pig.png": ["pig/temperate_pig.png", "pig/pig_temperate.png"],
+        "cow/cow.png": ["cow/temperate_cow.png", "cow/cow_temperate.png"],
+        "chicken.png": ["chicken/temperate_chicken.png", "chicken/chicken_temperate.png"],
+        "sheep/sheep_fur.png": ["sheep/sheep_wool.png"],
+        "armorstand/wood.png": ["armorstand/armorstand.png"],
+        "zombie_pigman.png": ["piglin/zombified_piglin.png"],
+        "shulker/endergolem.png": ["shulker/shulker_purple.png", "shulker/shulker.png"],
+        "shulker/shulker.png": ["shulker/shulker_purple.png"],
+    }, **{"villager/%s.png" % profession: ["villager/villager.png"]
+          for profession in ("farmer", "librarian", "priest", "smith", "butcher")}).items()
+}
 
 
 class WorldScene(scenenode.Node):
@@ -229,6 +278,9 @@ class WorldScene(scenenode.Node):
             self.textureAtlas = textureAtlas
             self.textureAtlasState.textureAtlas = textureAtlas
             self.updateTask.textureAtlas = textureAtlas
+            # Textures from other resources, which may be another version's.
+            self.updateTask.modelTextures = {}
+            self.updateTask._chestsComeInHalves = None
             self.discardAllChunks()
 
     def chunkPositions(self):

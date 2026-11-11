@@ -1,0 +1,109 @@
+{
+  "problems": [],
+  "workedOut": [
+    {
+      "block": "minecraft:acacia_leaves",
+      "attributes": "properties differ from 1.21.1"
+    },
+    {
+      "block": "minecraft:activator_rail",
+      "attributes": "properties differ from 1.21.1"
+    },
+    {
+      "block": "minecraft:barrier",
+      "attributes": "properties differ from 1.21.1"
+    },
+    {
+      "block": "minecraft:birch_leaves",
+      "attributes": "properties differ from 1.21.1"
+    },
+    {
+      "block": "minecraft:cauldron",
+      "attributes": "properties differ from 1.21.1"
+    },
+    {
+      "block": "minecraft:creeper_head",
+      "attributes": "properties differ from 1.21.1"
+    },
+    {
+      "block": "minecraft:creeper_wall_head",
+      "attributes": "properties differ from 1.21.1"
+    },
+    {
+      "block": "minecraft:dark_oak_leaves",
+      "attributes": "properties differ from 1.21.1"
+    },
+    {
+      "block": "minecraft:detector_rail",
+      "attributes": "properties differ from 1.21.1"
+    },
+    {
+      "block": "minecraft:dragon_head",
+      "attributes": "properties differ from 1.21.1"
+    },
+    {
+      "block": "minecraft:dragon_wall_head",
+      "attributes": "properties differ from 1.21.1"
+    },
+    {
+      "block": "minecraft:grass",
+      "attributes": "as minecraft:short_grass"
+    },
+    {
+      "block": "minecraft:grass_path",
+      "attributes": "as minecraft:dirt_path"
+    },
+    {
+      "block": "minecraft:jungle_leaves",
+      "attributes": "properties differ from 1.21.1"
+    },
+    {
+      "block": "minecraft:oak_leaves",
+      "attributes": "properties differ from 1.21.1"
+    },
+    {
+      "block": "minecraft:player_head",
+      "attributes": "properties differ from 1.21.1"
+    },
+    {
+      "block": "minecraft:player_wall_head",
+      "attributes": "properties differ from 1.21.1"
+    },
+    {
+      "block": "minecraft:powered_rail",
+      "attributes": "properties differ from 1.21.1"
+    },
+    {
+      "block": "minecraft:rail",
+      "attributes": "properties differ from 1.21.1"
+    },
+    {
+      "block": "minecraft:skeleton_skull",
+      "attributes": "properties differ from 1.21.1"
+    },
+    {
+      "block": "minecraft:skeleton_wall_skull",
+      "attributes": "properties differ from 1.21.1"
+    },
+    {
+      "block": "minecraft:spruce_leaves",
+      "attributes": "properties differ from 1.21.1"
+    },
+    {
+      "block": "minecraft:wither_skeleton_skull",
+      "attributes": "properties differ from 1.21.1"
+    },
+    {
+      "block": "minecraft:wither_skeleton_wall_skull",
+      "attributes": "properties differ from 1.21.1"
+    },
+    {
+      "block": "minecraft:zombie_head",
+      "attributes": "properties differ from 1.21.1"
+    },
+    {
+      "block": "minecraft:zombie_wall_head",
+      "attributes": "properties differ from 1.21.1"
+    }
+  ]
+}

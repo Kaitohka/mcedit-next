@@ -88,8 +88,13 @@ def attributes(name, blockState="", renderType=2, hasEntity=True, particle="mine
             "particleTexture": particle}
 
 
-def testFallbackForChest():
-    model = fallbackModel(attributes("minecraft:chest", "[facing=north,type=single,waterlogged=false]"))
+def testChestHasNoFallbackBox():
+    # It is drawn from its block entity, and a box the same size would hide it.
+    assert fallbackModel(attributes("minecraft:chest", "[facing=north,type=single,waterlogged=false]")) is None
+
+
+def testFallbackForTrappedChest():
+    model = fallbackModel(attributes("minecraft:trapped_chest", "[facing=north,type=single,waterlogged=false]"))
     element = model["model"]["elements"][0]
     assert element["from"] == [1, 0, 1] and element["to"] == [15, 14, 15]
     assert len(element["faces"]) == 6
@@ -233,6 +238,13 @@ def testAssetsVersionForWorld(tmp_path):
     assert minecraftinstall.assetsVersionForWorld(str(old)) is None
 
 
+def testAssetsOfTheWorldsOwnReleaseComeFirst(tmp_path):
+    world = tmp_path / "world"
+    world.mkdir()
+    worlds.writeLevelDat(world, 3837)  # 1.20.5, which has the same blocks as 1.20.6 to 1.21.1
+    assert minecraftinstall.assetsVersionsForWorld(str(world)) == ["1.20.5", "1.21.1"]
+
+
 def testOnly112AssetsServeOldWorlds(monkeypatch, tmp_path):
     # 1.13 renamed nearly every block, model and texture, so a newer game is no use for an older world.
     group = minecraftinstall.MCInstallGroup.__new__(minecraftinstall.MCInstallGroup)
@@ -370,7 +382,7 @@ def testAtlasHasWaterAndLava(atlas):
 @needsJar
 @pytest.mark.parametrize("name, quads", [
     ("minecraft:stone", 6),
-    ("minecraft:chest[facing=north,type=single,waterlogged=false]", 6),
+    ("minecraft:trapped_chest[facing=north,type=single,waterlogged=false]", 6),
     ("minecraft:oak_sign[rotation=0,waterlogged=false]", 6),
     ("minecraft:red_bed[facing=north,occupied=false,part=foot]", 6),
     ("minecraft:black_shulker_box[facing=up]", 6),
@@ -401,3 +413,58 @@ def testStateAddedAfterCookingUsesTheUnknownModel(world, models):
     ID, meta = world.blocktypes.idAndMeta("somemod:gadget", [("n", "1")])
     assert not models.hasModel(ID, meta)
     assert models.quadCount(ID, meta) == models.quadCount(0, 15)
+
+
+# --- Chest textures from 1.15 on ---
+
+def testChestTextureConversionMovesEachFace():
+    from mcedit2.rendering.chunkmeshes.entity.chest import chestTextureInOldLayout
+    image = numpy.zeros((64, 64, 4), "uint8")
+    image[0:14, 14:28] = 1  # the lid's top, in the new layout
+    image[0:14, 28:42] = 2  # the lid's bottom
+    image[14:19, 14:28, 0] = numpy.arange(5)[:, None]  # the lid's front, darker at the top
+    old = chestTextureInOldLayout(image)
+    assert (old[0:14, 14:28] == 2).all() and (old[0:14, 28:42] == 1).all()
+    # The new front is the old back, turned half round.
+    assert old[14:19, 42:56, 0].tolist() == [[4 - row] * 14 for row in range(5)]
+
+
+def testChestTextureConversionUndoesItself():
+    from mcedit2.rendering.chunkmeshes.entity.chest import chestTextureInOldLayout
+    image = numpy.random.RandomState(3).randint(0, 255, (64, 64, 4)).astype("uint8")
+    assert (chestTextureInOldLayout(chestTextureInOldLayout(image)) == image).all()
+
+
+def testDoubleChestHalvesHaveTheirOwnTextures():
+    from mcedit2.rendering.chunkmeshes.entity.chest import CHEST_TEXTURES, HALF_CHEST_BOXES, chestTextureInOldLayout
+    folder = "assets/minecraft/textures/entity/chest/"
+    assert CHEST_TEXTURES[folder + "normal_left.png"] == HALF_CHEST_BOXES
+    assert CHEST_TEXTURES[folder + "trapped_right.png"] == HALF_CHEST_BOXES
+    image = numpy.zeros((64, 64, 4), "uint8")
+    image[0:14, 14:29] = 1  # the lid's top, a block and a half wide
+    old = chestTextureInOldLayout(image, HALF_CHEST_BOXES)
+    assert (old[0:14, 29:44] == 1).all() and (old[0:14, 14:29] == 0).all()
+
+
+@pytest.mark.parametrize("side, west, east, knob", [("left", 0, 15, (0, 1)), ("right", 1, 16, (15, 16))])
+def testDoubleChestHalvesMeetInTheMiddle(side, west, east, knob):
+    # Facing south, the left half reaches over the west side of its block, where the right half is.
+    from mcedit2.rendering.chunkmeshes.entity import models
+    model = models.cookedTileEntityModels["MCEDIT_Chest_" + side]
+    assert model.modelTexture.endswith("normal_%s.png" % side)
+    xs = numpy.array(model.vertices)[:, 0]
+    assert (xs.min(), xs.max()) == (west, east)
+    knobModel = models.tileEntityModels["MCEDIT_Chest_" + side].chestKnob
+    assert knobModel.cx == knob[0]
+
+
+def testModBlockEntityWithModelFilesIsDrawnFromThem():
+    # Its renderer's faces could not be had, but the pack says its model files can be drawn, as HBM's doors' can.
+    door = attributes("hbm_m:sliding_blast_door", "[facing=north]")
+    door["modelSource"] = "json"
+    ModernBlockTypeSet._addRenderHints(door)
+    assert "fallbackModel" not in door and door["renderType"] == 3
+    box = attributes("somemod:machine", "[facing=north]")
+    box["modelSource"] = "fallback"
+    ModernBlockTypeSet._addRenderHints(box)
+    assert "fallbackModel" in box

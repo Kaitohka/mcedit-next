@@ -1,0 +1,47 @@
+// Applied by each target's build.gradle, which sets these first:
+//
+//   ext.minecraftVersion = '1.20.1'
+//   ext.loader = 'forge'           // or 'fabric' or 'neoforge'
+//   ext.javaRelease = 17           // the Java version that release of the game runs on
+//   ext.versionFolder = '1.16.5-forge'  // optional: another folder in ../../versions for the game's code
+//
+// Each target compiles the code for its version of the game, in ../../versions/<version>, with its own glue, in
+// src/glue, into a package of its own, net.mcedit.exporter.v<version>_<loader>. The same source is compiled for
+// each loader, and each loader's build maps the game's names to the ones it uses at run time, so the classes must
+// not share names. build_universal.py puts every target's classes in one jar.
+
+def target = 'v' + minecraftVersion.replace('.', '_') + '_' + loader
+def targetPackage = 'net.mcedit.exporter.' + target
+def generated = layout.buildDirectory.dir('generated/exporter')
+
+def generateExporterSources = tasks.register('generateExporterSources', Sync) {
+    from(file("../../versions/" + (project.ext.has('versionFolder') ? versionFolder : minecraftVersion)))
+    from(file('src/glue'))
+    include '**/*.java'
+    into(generated)
+    includeEmptyDirs = false
+    eachFile { it.path = targetPackage.replace('.', '/') + '/' + it.name }
+    filter { String line -> line.replace('@PACKAGE@', targetPackage) }
+    inputs.property('targetPackage', targetPackage)
+}
+
+sourceSets.main.java.srcDir(generated)
+sourceSets.main.java.srcDir(file('../../common/src/main/java'))
+
+// Compiled by JDK 21, or the JDK of the game's Java version if newer (25 from 26.1), for that version of Java.
+// Only this task: the loaders' build tools have compile tasks of their own, for the game, which must be left alone.
+tasks.named('compileJava', JavaCompile) {
+    dependsOn generateExporterSources
+    javaCompiler = javaToolchains.compilerFor { languageVersion = JavaLanguageVersion.of(Math.max(21, javaRelease as int)) }
+    options.encoding = 'UTF-8'
+    options.release = javaRelease
+}
+
+// There are no tests, but Gradle still looks for a compiler for them, and the runtimes in gradle.properties are not.
+tasks.named('compileTestJava', JavaCompile) {
+    javaCompiler = javaToolchains.compilerFor { languageVersion = JavaLanguageVersion.of(Math.max(21, javaRelease as int)) }
+    options.release = javaRelease
+}
+
+// Where build_universal.py finds the classes, as the loader names things at run time.
+ext.exporterTarget = target

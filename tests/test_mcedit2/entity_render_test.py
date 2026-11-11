@@ -82,6 +82,10 @@ class FakeUpdateTask:
 
     def __init__(self):
         self.texturesAsked = []
+        self.halves = True
+
+    def chestsComeInHalves(self):
+        return self.halves
 
     def getModelTexture(self, path):
         self.texturesAsked.append(path)
@@ -93,8 +97,9 @@ class FakeChunkUpdate:
         self.updateTask = FakeUpdateTask()
 
 
-def render(meshClass, chunk):
+def render(meshClass, chunk, chestsComeInHalves=True):
     mesh = meshClass(FakeChunkUpdate())
+    mesh.chunkUpdate.updateTask.halves = chestsComeInHalves
     for _ in mesh.makeChunkVertices(chunk, None):
         pass
     return mesh
@@ -160,16 +165,43 @@ def testModernCommandBlocksAreColoured():
     assert colors[2] == (0xff, 0xff, 0x33, 0x44)
 
 
-def testModernChestsAreDrawnOnePerHalf():
+MODERN_CHESTS = {
+    (1, 64, 1): FakeBlock("minecraft:chest", "[facing=north,type=left,waterlogged=false]"),
+    (2, 64, 1): FakeBlock("minecraft:chest", "[facing=north,type=right,waterlogged=false]"),
+    (5, 64, 1): FakeBlock("minecraft:chest", "[facing=east,type=single,waterlogged=true]"),
+}
+
+
+def testDoubleChestsFrom1_15AreDrawnAsTwoHalves():
+    # Each half of a double chest has its own model, a block and a half wide, and its own texture.
+    chunk = FakeChunk(blockEntities=[blockEntityTag("minecraft:chest", pos) for pos in MODERN_CHESTS],
+                      blocks=MODERN_CHESTS)
+    mesh = render(entitymesh.TileEntityModelRenderer, chunk)
+    assert mesh.sceneNode.childCount() == 3
+    folder = "assets/minecraft/textures/entity/chest/"
+    assert sorted(mesh.chunkUpdate.updateTask.texturesAsked) == [
+        folder + "normal.png", folder + "normal_left.png", folder + "normal_right.png"]
+
+
+def testDoubleChestsOf1_13And1_14AreDrawnWholeByTheRightHalf():
+    chunk = FakeChunk(blockEntities=[blockEntityTag("minecraft:chest", pos) for pos in MODERN_CHESTS],
+                      blocks=MODERN_CHESTS)
+    mesh = render(entitymesh.TileEntityModelRenderer, chunk, chestsComeInHalves=False)
+    assert mesh.sceneNode.childCount() == 2
+    folder = "assets/minecraft/textures/entity/chest/"
+    assert sorted(mesh.chunkUpdate.updateTask.texturesAsked) == [folder + "normal.png", folder + "normal_double.png"]
+
+
+def testChestsOf1_11And1_12AreToldFromModernOnesByTheirState():
+    # From 1.11 a chest's block entity is named minecraft:chest, but only from 1.13 does its state say its half.
     blocks = {
-        (1, 64, 1): FakeBlock("minecraft:chest", "[facing=north,type=left,waterlogged=false]"),
-        (2, 64, 1): FakeBlock("minecraft:chest", "[facing=north,type=right,waterlogged=false]"),
-        (5, 64, 1): FakeBlock("minecraft:chest", "[facing=east,type=single,waterlogged=true]"),
+        (1, 64, 1): FakeBlock("minecraft:chest", "[facing=north]"),
+        (2, 64, 1): FakeBlock("minecraft:chest", "[facing=north]"),
     }
     chunk = FakeChunk(blockEntities=[blockEntityTag("minecraft:chest", pos) for pos in blocks], blocks=blocks)
     mesh = render(entitymesh.TileEntityModelRenderer, chunk)
-    assert mesh.sceneNode.childCount() == 3
-    assert set(mesh.chunkUpdate.updateTask.texturesAsked) == {"assets/minecraft/textures/entity/chest/normal.png"}
+    assert mesh.sceneNode.childCount() == 1
+    assert mesh.chunkUpdate.updateTask.texturesAsked == ["assets/minecraft/textures/entity/chest/normal_double.png"]
 
 
 def testOldChestsStillMakeDoubleChests():

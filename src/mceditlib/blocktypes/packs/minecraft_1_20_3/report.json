@@ -1,0 +1,9 @@
+{
+  "problems": [],
+  "workedOut": [
+    {
+      "block": "minecraft:trial_spawner",
+      "attributes": "properties differ from 1.21.1"
+    }
+  ]
+}

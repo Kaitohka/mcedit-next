@@ -57,6 +57,22 @@ def writeStubAssets(path):
         z.writestr("assets/minecraft/models/block/cube_all.json",
                    '{"parent": "block/cube", "textures": {"particle": "#all", "down": "#all", "up": "#all", '
                    '"north": "#all", "east": "#all", "south": "#all", "west": "#all"}}')
+        for texture in entityModelTextures():
+            z.writestr(texture, png)
+
+
+def entityModelTextures():
+    """ Every texture that the models for mobs and chests can ask for. """
+    from mcedit2.rendering.chunkmeshes.entity import models
+    from mcedit2.rendering.chunkmeshes.entity.villager import ModelVillager
+
+    textures = set(models._NAMESPACED_TEXTURES.values())
+    for model in list(models.models.values()) + list(models.tileEntityModels.values()):
+        if getattr(model, "modelTexture", None):
+            textures.add(model.modelTexture)
+    for profession in ModelVillager.professionNames.values():
+        textures.add("assets/minecraft/textures/entity/villager/%s.png" % profession)
+    return sorted(textures)
 
 
 # Logged errors that do not depend on the code under test.
@@ -311,6 +327,8 @@ class SmokeTest:
     def checkInspector(self, session):
         from mceditlib.anvil.entities import EntityPtr
 
+        if not session.currentDimension.containsChunk(0, 0):
+            return  # a given world that has nothing there
         chunk = session.currentDimension.getChunk(0, 0)
         for ref in chunk.TileEntities:
             self.step("inspect block entity %s" % ref.id, lambda p=ref.Position: session.inspectBlock(p))

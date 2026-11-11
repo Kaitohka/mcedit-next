@@ -1,0 +1,12 @@
+[
+  {
+    "modid": "mcedit_exporter",
+    "name": "MCEdit Exporter",
+    "description": "Exports the blocks and block entities registered in this client, so that MCEdit can display them. Runs on the client only and does nothing until /mcedit_export is used.",
+    "version": "@VERSION@",
+    "mcversion": "@LEGACY_VERSIONS@",
+    "authorList": [],
+    "credits": "",
+    "url": ""
+  }
+]

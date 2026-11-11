@@ -1,0 +1,61 @@
+{
+  "problems": [],
+  "workedOut": [
+    {
+      "block": "minecraft:barrier",
+      "attributes": "properties differ from 1.21.1"
+    },
+    {
+      "block": "minecraft:creeper_head",
+      "attributes": "properties differ from 1.21.1"
+    },
+    {
+      "block": "minecraft:creeper_wall_head",
+      "attributes": "properties differ from 1.21.1"
+    },
+    {
+      "block": "minecraft:dragon_head",
+      "attributes": "properties differ from 1.21.1"
+    },
+    {
+      "block": "minecraft:dragon_wall_head",
+      "attributes": "properties differ from 1.21.1"
+    },
+    {
+      "block": "minecraft:grass",
+      "attributes": "as minecraft:short_grass"
+    },
+    {
+      "block": "minecraft:player_head",
+      "attributes": "properties differ from 1.21.1"
+    },
+    {
+      "block": "minecraft:player_wall_head",
+      "attributes": "properties differ from 1.21.1"
+    },
+    {
+      "block": "minecraft:skeleton_skull",
+      "attributes": "properties differ from 1.21.1"
+    },
+    {
+      "block": "minecraft:skeleton_wall_skull",
+      "attributes": "properties differ from 1.21.1"
+    },
+    {
+      "block": "minecraft:wither_skeleton_skull",
+      "attributes": "properties differ from 1.21.1"
+    },
+    {
+      "block": "minecraft:wither_skeleton_wall_skull",
+      "attributes": "properties differ from 1.21.1"
+    },
+    {
+      "block": "minecraft:zombie_head",
+      "attributes": "properties differ from 1.21.1"
+    },
+    {
+      "block": "minecraft:zombie_wall_head",
+      "attributes": "properties differ from 1.21.1"
+    }
+  ]
+}

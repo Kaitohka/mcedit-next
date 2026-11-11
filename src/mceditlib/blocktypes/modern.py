@@ -16,6 +16,7 @@ from collections import OrderedDict
 
 import numpy
 
+from mceditlib import nbt
 from mceditlib.blocktypes import BlockTypeSet, id_limit, itemtypes, VERSION_1_8, STATE_REDSTONE_WIRE, \
     STATE_UNRESOLVED, STATE_WATERLOGGED
 from mceditlib.blocktypes.block_pack import BlockPack
@@ -133,10 +134,10 @@ class ModernBlockTypeSet(BlockTypeSet):
         self.namesByID.setdefault(ID, name)
         self.IDsByName.setdefault(name, ID)
         self._nameAndStatesByBlock.setdefault(name, []).append(name + attributes["blockState"])
-        self._setRenderFlags(ID, meta, name, attributes["blockState"])
+        self._setRenderFlags(ID, meta, name, attributes["blockState"], attributes.get("cullsSameBlock"))
         self.addJsonBlock(attributes)
 
-    def _setRenderFlags(self, ID, meta, name, blockState):
+    def _setRenderFlags(self, ID, meta, name, blockState, cullsSameBlock=None):
         flags = 0
         if "waterlogged=true" in blockState or name in ALWAYS_IN_WATER:
             flags |= STATE_WATERLOGGED
@@ -144,7 +145,8 @@ class ModernBlockTypeSet(BlockTypeSet):
             flags |= STATE_REDSTONE_WIRE
         self.stateFlags[ID * 16 + meta] = flags
 
-        if SELF_CULLING.search(name):
+        # Glass and the like hide their faces against the same block. A block pack says so for blocks from mods.
+        if cullsSameBlock or SELF_CULLING.search(name):
             self.selfCullGroup[ID] = self._selfCullGroups.setdefault(name, len(self._selfCullGroups) + 1)
 
     @staticmethod
@@ -160,7 +162,11 @@ class ModernBlockTypeSet(BlockTypeSet):
             attributes["color"] = attributes["tintColor"] & 0xffffff
 
         model = fallbackModel(attributes)
-        if model is not None:
+        if model is not None and attributes.get("modelSource") == "json" and not name.startswith("minecraft:"):
+            # A mod's block entity whose renderer's faces could not be had, but whose model files can be drawn, as
+            # HBM's doors' models from their own loaders: those are nearer its look than a box.
+            attributes["renderType"] = RENDER_MODEL
+        elif model is not None:
             attributes["fallbackModel"] = model
             attributes["renderType"] = RENDER_MODEL
 
@@ -389,17 +395,54 @@ class ModernBlockTypeSet(BlockTypeSet):
         """
         Return arrays that turn indexes into the given palette into virtual IDs and metas.
 
-        :param paletteTag: A list of block states as saved in a chunk section.
+        :param paletteTag: A list of block states as saved in a chunk section, in any of the forms the game has
+            used. See paletteEntryState.
         :return: (IDs, metas)
         :rtype: (numpy.ndarray, numpy.ndarray)
         """
-        nameKey = self.profile.paletteNameKey
-        propertiesKey = self.profile.palettePropertiesKey
         IDs = numpy.zeros(len(paletteTag), dtype="uint16")
         metas = numpy.zeros(len(paletteTag), dtype="uint8")
         for index, entry in enumerate(paletteTag):
-            properties = None
-            if propertiesKey in entry:
-                properties = [(key, tag.value) for key, tag in entry[propertiesKey].items()]
-            IDs[index], metas[index] = self.idAndMeta(entry[nameKey].value, properties)
+            name, properties = paletteEntryState(entry)
+            if properties is None:
+                # Since 26.3 the properties of a default state may be left out. Before that, a block with
+                # properties always had them saved, so this is a block that has none.
+                state = self.defaultBlockstates.get(name, "")
+                pair = self.IDsByState.get(name + state)
+                if pair is None:
+                    pair = self.idAndMeta(name)
+                IDs[index], metas[index] = pair
+            else:
+                IDs[index], metas[index] = self.idAndMeta(name, properties)
         return IDs, metas
+
+
+def paletteEntryState(entry):
+    """
+    Return the block name of a palette entry, and its properties as (key, value) pairs, or None if it has
+    none saved.
+
+    Up to 26.2 an entry is a compound with "Name" and maybe "Properties". From 26.3 the keys are "id" and
+    "properties", and an entry may instead be a string: the name, maybe followed by [key=value,...].
+    """
+    if entry.tagID == nbt.ID_COMPOUND and len(entry) == 1 and "" in entry:
+        # A list can't hold both strings and compounds, so in one that has both the strings are each wrapped in a
+        # compound under the empty name.
+        entry = entry[""]
+    if entry.tagID == nbt.ID_STRING:
+        text = entry.value
+        name, bracket, rest = text.partition("[")
+        if not bracket:
+            return name, None
+        pairs = [pair.partition("=") for pair in rest.rstrip("]").split(",") if pair]
+        return name, [(key, value) for key, _, value in pairs]
+
+    nameTag = entry.get("id")
+    if nameTag is None:
+        nameTag = entry["Name"]
+    propertiesTag = entry.get("properties")
+    if propertiesTag is None:
+        propertiesTag = entry.get("Properties")
+    if propertiesTag is None:
+        return nameTag.value, None
+    return nameTag.value, [(key, tag.value) for key, tag in propertiesTag.items()]

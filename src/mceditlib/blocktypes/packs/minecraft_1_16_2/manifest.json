@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-08T04:39:34.835542+00:00",
+  "scope": "vanilla",
+  "minecraftVersion": "1.16.2",
+  "releases": [
+    "1.16.2",
+    "1.16.3",
+    "1.16.4",
+    "1.16.5"
+  ],
+  "dataVersion": 2578,
+  "loader": "vanilla",
+  "source": "data generator reports, with attributes from the 1.21.1 pack",
+  "mods": [
+    {
+      "id": "minecraft",
+      "version": "1.16.2"
+    }
+  ],
+  "counts": {
+    "blocks": 763,
+    "states": 17112,
+    "blockEntities": 33,
+    "workedOut": 26
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-10T00:10:07.913421+00:00",
+  "scope": "vanilla",
+  "minecraftVersion": "1.21.9",
+  "releases": [
+    "1.21.9",
+    "1.21.10",
+    "1.21.11"
+  ],
+  "dataVersion": 4554,
+  "loader": "vanilla",
+  "source": "the export mod in the 1.21.9 client with neoforge 21.9.16-beta",
+  "mods": [
+    {
+      "id": "minecraft",
+      "version": "1.21.9"
+    }
+  ],
+  "counts": {
+    "blocks": 1166,
+    "states": 29671,
+    "blockEntities": 49,
+    "workedOut": 0
+  }
+}

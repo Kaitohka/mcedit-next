@@ -1,0 +1,28 @@
+// Forge for 1.17.1 runs with SRG names for the game. ForgeGradle maps to them, and needs a Gradle of its own: this
+// target has its own wrapper, for Gradle 8.8.
+plugins {
+    id 'java'
+    id 'net.minecraftforge.gradle' version '[6.0.24,6.2)'
+}
+
+ext.minecraftVersion = '1.17.1'
+ext.loader = 'forge'
+ext.javaRelease = 16
+apply from: '../shared.gradle'
+
+base.archivesName = 'mcedit_exporter-1.17.1-forge'
+
+minecraft {
+    mappings channel: 'official', version: '1.17.1'
+}
+
+repositories {
+    maven { url = 'https://maven.minecraftforge.net/' }
+}
+
+dependencies {
+    minecraft 'net.minecraftforge:forge:1.17.1-37.1.1'
+}
+
+// The jar build_universal.py takes is the one with Forge's names for the game, as it has them at run time.
+jar.finalizedBy('reobfJar')

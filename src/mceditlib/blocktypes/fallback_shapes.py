@@ -32,7 +32,10 @@ SHAPES = (
 )
 DEFAULT_SHAPE = (2, 2, 2, 14, 14, 14)
 
-NO_FALLBACK = ("minecraft:moving_piston",)  # exists only for a moment, and draws its moving block
+NO_FALLBACK = (
+    "minecraft:moving_piston",  # exists only for a moment, and draws its moving block
+    "minecraft:chest",  # drawn from its block entity, by TileEntityModelRenderer, which a box would hide
+)
 RENDER_INVISIBLE = 0
 RENDER_LIQUID = 1
 RENDER_ENTITY = 2

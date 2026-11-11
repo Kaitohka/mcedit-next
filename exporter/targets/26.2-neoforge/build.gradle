@@ -1,0 +1,15 @@
+plugins {
+    id 'java'
+    id 'net.neoforged.moddev' version '2.0.148'
+}
+
+ext.minecraftVersion = '26.2'
+ext.loader = 'neoforge'
+ext.javaRelease = 25
+apply from: '../shared.gradle'
+
+base.archivesName = 'mcedit_exporter-26.2-neoforge'
+
+neoForge {
+    version = '26.2.0.93'
+}

@@ -66,6 +66,7 @@ worlds_local/
 .gradle
 exporter/*/run
 exporter/*/runs
+exporter/targets/*/run
 
 # Written by mcedit2.spec when building.
 src/mcedit2/_version.py

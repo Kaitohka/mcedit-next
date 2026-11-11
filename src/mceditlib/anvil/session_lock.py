@@ -9,6 +9,8 @@
 """
 import logging
 import os
+import struct
+import time
 
 from mceditlib.exceptions import LevelFormatError
 
@@ -81,6 +83,24 @@ class SessionLock(object):
     @property
     def held(self):
         return self._file is not None
+
+    # Up to 1.14 the game did not lock the file, but wrote in it the time it opened the world, and gave the world up if
+    # that changed. These keep the same kind of timestamp for such worlds.
+
+    def writeTimestamp(self):
+        """ Write the time now into the file, as a big-endian count of milliseconds, and return it. """
+        stamp = int(time.time() * 1000)
+        self._file.seek(0)
+        self._file.write(struct.pack(">q", stamp))
+        self._file.truncate()
+        os.fsync(self._file.fileno())
+        return stamp
+
+    def readTimestamp(self):
+        """ The timestamp in the file, or None if it does not hold one. """
+        self._file.seek(0)
+        data = self._file.read(8)
+        return struct.unpack(">q", data)[0] if len(data) == 8 else None
 
     def release(self):
         if self._file is not None:

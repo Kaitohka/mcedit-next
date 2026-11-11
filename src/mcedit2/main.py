@@ -72,6 +72,9 @@ def setup_logging():
     consoleHandler.setFormatter(fmt)
     root_logger.addHandler(consoleHandler)
 
+    # A message below every handler's level would only be made to be thrown away. Loading chunks logs a lot of them.
+    root_logger.setLevel(min(logfileHandler.level, consoleHandler.level))
+
 
 editorApp = None
 

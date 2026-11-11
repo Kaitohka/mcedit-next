@@ -475,28 +475,20 @@ def chestEntityModelNode(ref, model, modelTex, chunk, facing, largeX, largeZ):
         "south": 0,
         "west": 90
     }
-    decenterState = Translate((-0.5, -0.5, -0.5))
-    node.addState(decenterState)
-
-    rotate = Rotate(rotations[facing], (0., 1., 0.))
-    node.addState(rotate)
-
     dx = dz = 0
     if largeX and facing == "north":
         dx = 1.
     if largeZ and facing == "east":
         dz = -1.
-
-    recenterState = Translate((0.5 + dx, 0.5, 0.5 + dz))
-    node.addState(recenterState)
-
     x, y, z = (ref.Position - (chunk.cx << 4, 0, chunk.cz << 4))
 
-    scale = Scale((1., -1., -1.))
-    node.addState(scale)
-
-    posTranslate = Translate((x, y + 1., z + 1.))
-    node.addState(posTranslate)
+    # A node's states apply to its vertices last first: the model is turned about its middle to face the way the
+    # block does, turned the right way up, and then put where the block is.
+    node.addState(Translate((x, y + 1., z + 1.)))
+    node.addState(Scale((1., -1., -1.)))
+    node.addState(Translate((0.5 + dx, 0.5, 0.5 + dz)))
+    node.addState(Rotate(rotations[facing], (0., 1., 0.)))
+    node.addState(Translate((-0.5, -0.5, -0.5)))
 
     bindTexture = BindTexture(modelTex, (1./model.texWidth, 1./model.texHeight, 1))
     node.addState(bindTexture)
@@ -511,47 +503,59 @@ class TileEntityModelRenderer(ChunkMeshBase):
         chests = {}
         for i, ref in enumerate(chunk.TileEntities):
             ID = models.legacyID(ref.id)
-            if ID not in models.cookedTileEntityModels:
+            if ID != "Chest":
                 continue
-            if ID == "Chest":
-                chests[ref.Position] = ref, {}
+            block = chunk.dimension.getBlock(*ref.Position)
+            if block.internalName != "minecraft:chest":
                 continue
+            properties = dict(p.split("=", 1) for p in block.blockState[1:-1].split(",") if "=" in p)
+            if properties.get("facing") in ("north", "east", "south", "west"):
+                chests[ref.Position] = ref, properties, {}
 
-        for (x, y, z), (ref, adj) in chests.items():
-            # Since 1.13 a double chest is two chests that say which half they are, and since 1.15
-            # its texture comes in halves too, so each half is drawn as a chest of its own.
-            if ":" in ref.id:
+        for (x, y, z), (ref, properties, adj) in chests.items():
+            # Before 1.13 a double chest is two chests side by side, and the one to the west or north draws both.
+            if "type" in properties:
                 continue
             for dx, dz in ((-1, 0), (1, 0), (0, -1), (0, 1)):
                 if (x+dx, y, z+dz) in chests:
                     adj[dx, dz] = ref
 
-        for ref, adj in chests.values():
-            if (-1, 0) not in adj and (0, -1) not in adj:
+        updateTask = self.chunkUpdate.updateTask
+        for ref, properties, adj in chests.values():
+            facing = properties["facing"]
+            if "type" in properties:
+                # Since 1.13 each half of a double chest says which it is.
+                half = properties["type"]
+                if half == "single":
+                    modelID = "Chest"
+                elif updateTask.chestsComeInHalves():
+                    modelID = "MCEDIT_Chest_" + half
+                elif half == "right":
+                    # In 1.13 and 1.14 the right half draws both, reaching over the left one's block.
+                    modelID = "MCEDIT_LargeChest"
+                else:
+                    continue
+                largeX = largeZ = False
+            else:
+                if (-1, 0) in adj or (0, -1) in adj:
+                    continue
                 if (1, 0) not in adj and (0, 1) not in adj:
-                    model = models.cookedTileEntityModels["Chest"]
+                    modelID = "Chest"
                 else:
-                    model = models.cookedTileEntityModels["MCEDIT_LargeChest"]
+                    modelID = "MCEDIT_LargeChest"
+                largeX, largeZ = (1, 0) in adj, (0, 1) in adj
 
-                texturePath = model.modelTexture
-                if texturePath is None:
-                    modelTex = None
-                else:
-                    modelTex = self.chunkUpdate.updateTask.getModelTexture(texturePath)
+            model = models.cookedTileEntityModels[modelID]
+            texturePath = model.modelTexture
+            if texturePath is None:
+                modelTex = None
+            else:
+                modelTex = updateTask.getModelTexture(texturePath)
 
-                block = chunk.dimension.getBlock(*ref.Position)
-                if block.internalName != "minecraft:chest":
-                    continue
-                properties = dict(p.split("=", 1) for p in block.blockState[1:-1].split(",") if "=" in p)
-                facing = properties.get("facing")
-                if facing not in ("north", "east", "south", "west"):
-                    continue
+            node = chestEntityModelNode(ref, model, modelTex, chunk, facing, largeX, largeZ)
+            sceneNode.addChild(node)
 
-                node = chestEntityModelNode(ref, model, modelTex, chunk, facing,
-                                            (1, 0) in adj, (0, 1) in adj)
-                sceneNode.addChild(node)
-
-                yield
+            yield
 
         self.sceneNode = sceneNode
 

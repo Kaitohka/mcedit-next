@@ -68,7 +68,7 @@ def testPackDescribesTheGameThatMadeIt(pack):
     assert pack.manifest["dataVersion"] == 3955
     assert pack.manifest["loader"] == "neoforge"
     assert pack.mods["mcedit_testmod"] == "1.0"
-    assert pack.manifest["counts"]["blocks"] == 6
+    assert pack.manifest["counts"]["blocks"] == 8
 
 
 def testOnlyBlocksFromModsAreInThePack(pack):
@@ -76,8 +76,12 @@ def testOnlyBlocksFromModsAreInThePack(pack):
 
 
 @pytest.mark.parametrize("name, source", [
-    ("plain", "json"), ("oriented[facing=north]", "json"), ("fragile", "json"),
-    ("render_only", "fallback"), ("loader_model", "fallback"), ("no_assets", "fallback"),
+    ("plain", "json"), ("oriented[facing=north]", "json"), ("fragile", "json"), ("obj_model", "json"),
+    # NeoForge's composite loader makes a model of other models, which MCEdit draws.
+    ("loader_model", "json"),
+    # Drawn by code, so the export writes the faces the game drew into a model of their own.
+    ("code_model", "generated"), ("render_only", "generated"),
+    ("no_assets", "fallback"),
 ])
 def testBlocksAreSortedByHowTheyCanBeDrawn(pack, name, source):
     assert attributesOf(pack, TEST_MOD + name)["modelSource"] == source
@@ -93,6 +97,17 @@ def testOnlyFilesInUseAreCopied(pack):
 
 def testFilesFromTheGameAreNotCopied(pack):
     assert not [name for name in pack.files.namelist() if name.startswith("assets/minecraft/")]
+
+
+def testFacesTheGameDrewAreWrittenOut(pack):
+    names = pack.files.namelist()
+    codeModel = attributesOf(pack, TEST_MOD + "code_model")["generatedModel"]
+    assert codeModel.startswith("mcedit_testmod:mcedit_generated/code_model/")
+    assert "assets/mcedit_testmod/models/%s.json" % codeModel.partition(":")[2] in names
+    # The renderer draws with a texture of its own, as entity models do, and with one from the block atlas.
+    assert "assets/mcedit_testmod/textures/entity/render_only_box.png" in names
+    assert attributesOf(pack, TEST_MOD + "render_only")["renderType"] == 3
+    assert "generatedModel" not in attributesOf(pack, TEST_MOD + "plain")
 
 
 def testParticleTextureOfABlockWithNoDrawnModelIsCopied(pack):
@@ -130,11 +145,12 @@ def testWorldListsItsMods(editor):
     assert "mcedit_testmod" in pack_library.worldMods(editor.adapter.metadata.metadataTag)
 
 
-@pytest.mark.parametrize("name", ["plain", "oriented", "render_only", "loader_model", "fragile", "no_assets"])
+@pytest.mark.parametrize("name", ["plain", "oriented", "render_only", "loader_model", "obj_model", "code_model",
+                                  "fragile", "no_assets"])
 def testEveryBlockInTheWorldIsDescribed(editor, name):
     found = set()
     dim = editor.getDimension()
-    for x in range(0, 12, POSITIONS_BY_REGISTRY_ORDER):
+    for x in range(0, 16, POSITIONS_BY_REGISTRY_ORDER):
         block = dim.getBlock(x, 210, 0)
         found.add(block.internalName)
         assert not block.unknown
@@ -165,13 +181,22 @@ def testEveryStateOfATurningBlockHasAModel(editor, cooked):
         assert models.quadCount(block.ID, block.meta) == 6
 
 
-def testRendererOnlyBlockIsABoxWithItsTexture(editor, cooked):
+def testRendererOnlyBlockIsDrawnAsItsRendererDrawsIt(editor, cooked):
     models, atlas = cooked
     block = editor.blocktypes[TEST_MOD + "render_only"]
     assert models.hasModel(block.ID, block.meta)
-    assert models.quadCount(block.ID, block.meta) == 6
+    assert models.quadCount(block.ID, block.meta) == 2  # the top of a box, and a plane on the north side
+    assert "assets/mcedit_testmod/textures/entity/render_only_box.png" in atlas.texCoordsByName
     assert "assets/mcedit_testmod/textures/block/render_only.png" in atlas.texCoordsByName
     assert editor.blocktypes.renderType[block.ID] == 3
+
+
+def testCodeModelBlockIsDrawnFromTheFacesTheGameMade(editor, cooked):
+    models, atlas = cooked
+    block = editor.blocktypes[TEST_MOD + "code_model"]
+    assert models.hasModel(block.ID, block.meta)
+    assert models.quadCount(block.ID, block.meta) == 2  # a slope, and the bottom under it
+    assert "assets/mcedit_testmod/textures/block/code_model.png" in atlas.texCoordsByName
 
 
 def testCustomLoaderBlockIsACubeWithItsTexture(editor, cooked):
@@ -180,6 +205,17 @@ def testCustomLoaderBlockIsACubeWithItsTexture(editor, cooked):
     assert models.hasModel(block.ID, block.meta)
     assert models.quadCount(block.ID, block.meta) == 6
     assert "assets/mcedit_testmod/textures/block/loader_model.png" in atlas.texCoordsByName
+
+
+def testOBJModelBlockIsDrawnFromItsFaces(editor, cooked, pack):
+    models, atlas = cooked
+    block = editor.blocktypes[TEST_MOD + "obj_model"]
+    assert models.hasModel(block.ID, block.meta)
+    assert models.quadCount(block.ID, block.meta) == 5  # a pyramid: its base, and four triangles
+    assert "assets/mcedit_testmod/textures/block/obj_model.png" in atlas.texCoordsByName
+    names = pack.files.namelist()
+    assert "assets/mcedit_testmod/models/block/obj_model.obj" in names
+    assert "assets/mcedit_testmod/models/block/obj_model.mtl" in names
 
 
 def testBlockWithNoAssetsIsAQuestionMarkButKeepsItsDetails(editor, cooked):

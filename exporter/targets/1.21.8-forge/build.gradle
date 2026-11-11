@@ -1,0 +1,25 @@
+// Forge from 1.21.8 runs with Mojang's names for the game, so the jar is used as it is compiled, with no remapping.
+// ForgeGradle needs a Gradle of its own: this target has its own wrapper, for Gradle 8.8.
+plugins {
+    id 'java'
+    id 'net.minecraftforge.gradle' version '[6.0.24,6.2)'
+}
+
+ext.minecraftVersion = '1.21.8'
+ext.loader = 'forge'
+ext.javaRelease = 21
+apply from: '../shared.gradle'
+
+base.archivesName = 'mcedit_exporter-1.21.8-forge'
+
+minecraft {
+    mappings channel: 'official', version: '1.21.8'
+}
+
+repositories {
+    maven { url = 'https://maven.minecraftforge.net/' }
+}
+
+dependencies {
+    minecraft 'net.minecraftforge:forge:1.21.8-58.1.26'
+}

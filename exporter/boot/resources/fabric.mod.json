@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "id": "mcedit_exporter",
+  "version": "@VERSION@",
+  "name": "MCEdit Exporter",
+  "description": "Exports the blocks and block entities registered in this client, so that MCEdit can display them. Runs on the client only and does nothing until /mcedit_export is used.",
+  "license": "BSD-3-Clause",
+  "environment": "client",
+  "entrypoints": {
+    "client": ["net.mcedit.exporter.boot.FabricBoot"]
+  },
+  "depends": {
+    "fabricloader": ">=0.12.0",
+    "minecraft": @FABRIC_VERSIONS@
+  },
+  "recommends": {
+    "fabric-api": "*"
+  }
+}

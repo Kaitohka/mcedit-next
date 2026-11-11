@@ -1,0 +1,24 @@
+// RetroFuturaGradle, by the GT New Horizons team, builds mods for Forge 1.12.2 and 1.7.10 with today's Gradle.
+plugins {
+    id 'java'
+    id 'com.gtnewhorizons.retrofuturagradle' version '2.0.6'
+}
+
+ext.minecraftVersion = '1.12.2'
+ext.loader = 'forge'
+ext.javaRelease = 8
+apply from: '../shared.gradle'
+
+base.archivesName = 'mcedit_exporter-1.12.2-forge'
+
+minecraft {
+    mcVersion = '1.12.2'
+    mcpMappingChannel = 'stable'
+    mcpMappingVersion = '39'
+    username = 'Developer'
+}
+
+repositories {
+    maven { url = 'https://nexus.gtnewhorizons.com/repository/public/' }
+    mavenCentral()
+}

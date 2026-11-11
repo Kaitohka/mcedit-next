@@ -23,9 +23,15 @@ if sys.platform == "win32":
 else:
     clock = time.time
 
+_noContext = contextlib.nullcontext()
+
+
 class Profiler(object):
     sampleLimit = 100000
     sampleTimeLimit = 10.000
+
+    # Only recorded while it can be looked at, in developer mode. Otherwise it slows down whatever it measures.
+    enabled = False
     def __init__(self):
         self.nameStack = deque(["root"])
 
@@ -56,8 +62,13 @@ class Profiler(object):
         self.nameStack.pop()
         self.recordSample()
 
-    @contextlib.contextmanager
     def context(self, name, entry=True):
+        if not self.enabled:
+            return _noContext
+        return self._context(name, entry)
+
+    @contextlib.contextmanager
+    def _context(self, name, entry=True):
         self.enter(name, entry)
         try:
             yield
@@ -69,6 +80,8 @@ class Profiler(object):
             log.debug("Decorating %s with %s", func, name)
             @functools.wraps(func)
             def _wrapper(*a, **kw):
+                if not self.enabled:
+                    return func(*a, **kw)
                 with self.context(name):
                     return func(*a, **kw)
             return _wrapper
@@ -81,6 +94,11 @@ class Profiler(object):
         return _decorate
 
     def iterate(self, it, name):
+        if not self.enabled:
+            return it
+        return self._iterate(it, name)
+
+    def _iterate(self, it, name):
         first = True
         while True:
             with self.context(name, first):

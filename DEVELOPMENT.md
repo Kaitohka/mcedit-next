@@ -2,7 +2,7 @@
 
 Upgrade plan: [PLAN_PY3_1.21.md](PLAN_PY3_1.21.md). The original Python 2 source is at [mcedit/mcedit2](https://github.com/mcedit/mcedit2).
 
-The code runs on Python 3.12 and PySide6. It edits worlds from Minecraft 1.12 and older, and from Minecraft 1.21 and 1.21.1.
+The code runs on Python 3.12 and PySide6. It opens, edits and saves worlds from every release of Minecraft from 1.7.10 to 26.3. The plan for the other versions is [PLAN_CROSS_VERSION.md](PLAN_CROSS_VERSION.md).
 
 ## Requirements
 
@@ -101,6 +101,36 @@ To change dependencies, edit `requirements-py3.in`, install it into `.venv`, the
 ```
 
 On Windows, keep the virtualenv on a short path: PySide6 installs files about 165 characters below it and fails past the 260 character limit unless long paths are enabled.
+
+## Versions of Minecraft
+
+Each release from 1.13 on has a format profile in `src/mceditlib/anvil/format_profile.py`, and a block pack in
+`src/mceditlib/blocktypes/packs/` listing its blocks and states. Releases with the same blocks share a pack;
+`packs/releases.json` says which. The packs, and `blocktypes/flattening.json` for chunks still saved as 1.12.2 saved
+them, are made from the game itself by the scripts in `scripts/versions/`. To make them again, or to check every
+release after a change:
+
+```bash
+.venv/Scripts/python.exe scripts/versions/fetch_versions.py
+.venv/Scripts/python.exe scripts/versions/make_reports.py
+.venv/Scripts/python.exe scripts/versions/make_block_packs.py
+.venv/Scripts/python.exe scripts/versions/make_test_worlds.py --accept-eula
+.venv/Scripts/python.exe scripts/versions/make_flattening_table.py --accept-eula
+.venv/Scripts/python.exe scripts/versions/check_worlds.py
+.venv/Scripts/python.exe scripts/versions/check_models.py
+.venv/Scripts/python.exe scripts/versions/check_saving.py --accept-eula
+```
+
+`check_saving.py` saves changes to a copy of each release's test world, has the release's own server load and save
+the chunks again, and compares every block. Run it after changing how chunks are saved.
+
+`fetch_versions.py` downloads the server and client of each release and the Java versions they need, about 4.5 GB,
+into `worlds_local/`. The jars belong to Mojang: keep them on your own computer. `make_test_worlds.py`,
+`make_flattening_table.py` and `check_saving.py` start Minecraft servers, which means agreeing to the Minecraft EULA; they do nothing without
+`--accept-eula`. `make_reports.py` runs the data generator, which starts no server.
+
+To add a release, add it to `RELEASES` in `format_profile.py` with the data version its worlds are saved with, run the
+scripts for it with `--only`, and check the results.
 
 ## Test worlds
 

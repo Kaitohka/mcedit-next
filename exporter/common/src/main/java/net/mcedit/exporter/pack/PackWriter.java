@@ -5,6 +5,7 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonPrimitive;
 
 import java.io.IOException;
 import java.io.OutputStreamWriter;
@@ -32,22 +33,121 @@ import java.util.zip.GZIPOutputStream;
  * Each block keeps an attribute under "common" when all of its states share the value, and under
  * the state otherwise, which makes the file many times smaller. Increase {@link #SCHEMA_VERSION}
  * when a reader of the old format would misread the new one.
+ *
+ * This runs in every version of the game the exporter supports, so it is written for Java 8 and for
+ * the oldest Gson those versions have.
  */
 public final class PackWriter {
     public static final int SCHEMA_VERSION = 1;
 
-    public record State(String name, Map<String, JsonElement> attributes) {
+    public static final class State {
+        private final String name;
+        private final Map<String, JsonElement> attributes;
+
+        public State(String name, Map<String, JsonElement> attributes) {
+            this.name = name;
+            this.attributes = attributes;
+        }
+
+        public String name() {
+            return name;
+        }
+
+        public Map<String, JsonElement> attributes() {
+            return attributes;
+        }
     }
 
-    public record Block(String id, String displayName, String descriptionId, String defaultState,
-                        Map<String, List<String>> properties, List<State> states) {
+    public static final class Block {
+        private final String id;
+        private final String displayName;
+        private final String descriptionId;
+        private final String defaultState;
+        private final Map<String, List<String>> properties;
+        private final List<State> states;
+        private final JsonObject legacy;
+
+        public Block(String id, String displayName, String descriptionId, String defaultState,
+                     Map<String, List<String>> properties, List<State> states) {
+            this(id, displayName, descriptionId, defaultState, properties, states, null);
+        }
+
+        /**
+         * @param legacy for versions that save blocks by number, before 1.13: "numericId", the block's number in the
+         *               game that exported it, and "metaStates", the state each data value reads as. Null otherwise.
+         */
+        public Block(String id, String displayName, String descriptionId, String defaultState,
+                     Map<String, List<String>> properties, List<State> states, JsonObject legacy) {
+            this.id = id;
+            this.displayName = displayName;
+            this.descriptionId = descriptionId;
+            this.defaultState = defaultState;
+            this.properties = properties;
+            this.states = states;
+            this.legacy = legacy;
+        }
+
+        public String id() {
+            return id;
+        }
+
+        public String displayName() {
+            return displayName;
+        }
+
+        public String descriptionId() {
+            return descriptionId;
+        }
+
+        public String defaultState() {
+            return defaultState;
+        }
+
+        public Map<String, List<String>> properties() {
+            return properties;
+        }
+
+        public List<State> states() {
+            return states;
+        }
+
+        public JsonObject legacy() {
+            return legacy;
+        }
     }
 
-    /**
-     * @param hasRenderer whether the game draws it with code of its own, or null if that could not be found out
-     * @param defaultNbt  what a new one saves, as SNBT to keep the types of its tags, or null if that failed
-     */
-    public record BlockEntity(String id, List<String> blocks, Boolean hasRenderer, String defaultNbt) {
+    public static final class BlockEntity {
+        private final String id;
+        private final List<String> blocks;
+        private final Boolean hasRenderer;
+        private final String defaultNbt;
+
+        /**
+         * @param hasRenderer whether the game draws it with code of its own, or null if that could not be found out
+         * @param defaultNbt  what a new one saves, as SNBT to keep the types of its tags, or null if that failed
+         */
+        public BlockEntity(String id, List<String> blocks, Boolean hasRenderer, String defaultNbt) {
+            this.id = id;
+            this.blocks = blocks;
+            this.hasRenderer = hasRenderer;
+            this.defaultNbt = defaultNbt;
+        }
+
+        public String id() {
+            return id;
+        }
+
+        public List<String> blocks() {
+            return blocks;
+        }
+
+        public Boolean hasRenderer() {
+            return hasRenderer;
+        }
+
+        public String defaultNbt() {
+            return defaultNbt;
+        }
     }
 
     private PackWriter() {
@@ -81,9 +181,7 @@ public final class PackWriter {
         for (BlockEntity entity : blockEntities) {
             JsonObject entry = new JsonObject();
             entry.addProperty("id", entity.id());
-            JsonArray entityBlocks = new JsonArray();
-            entity.blocks().forEach(entityBlocks::add);
-            entry.add("blocks", entityBlocks);
+            entry.add("blocks", strings(entity.blocks()));
             if (entity.hasRenderer() != null) {
                 entry.addProperty("hasRenderer", entity.hasRenderer());
             }
@@ -94,19 +192,17 @@ public final class PackWriter {
         }
         JsonObject entitiesFile = new JsonObject();
         entitiesFile.add("blockEntities", entityArray);
-        Files.writeString(folder.resolve("block_entities.json"), pretty.toJson(entitiesFile), StandardCharsets.UTF_8);
+        writeText(folder.resolve("block_entities.json"), pretty.toJson(entitiesFile));
 
         if (biomes != null) {
             JsonObject biomesFile = new JsonObject();
             biomesFile.add("biomes", biomes);
-            Files.writeString(folder.resolve("biomes.json"), pretty.toJson(biomesFile), StandardCharsets.UTF_8);
+            writeText(folder.resolve("biomes.json"), pretty.toJson(biomesFile));
         }
 
         JsonObject report = new JsonObject();
-        JsonArray problemArray = new JsonArray();
-        problems.forEach(problemArray::add);
-        report.add("problems", problemArray);
-        Files.writeString(folder.resolve("report.json"), pretty.toJson(report), StandardCharsets.UTF_8);
+        report.add("problems", strings(problems));
+        writeText(folder.resolve("report.json"), pretty.toJson(report));
 
         // Last, so that a manifest means the rest of the pack was written completely.
         JsonObject counts = new JsonObject();
@@ -117,9 +213,11 @@ public final class PackWriter {
 
         JsonObject fullManifest = new JsonObject();
         fullManifest.addProperty("schemaVersion", SCHEMA_VERSION);
-        manifest.entrySet().forEach(entry -> fullManifest.add(entry.getKey(), entry.getValue()));
+        for (Map.Entry<String, JsonElement> entry : manifest.entrySet()) {
+            fullManifest.add(entry.getKey(), entry.getValue());
+        }
         fullManifest.add("counts", counts);
-        Files.writeString(folder.resolve("manifest.json"), pretty.toJson(fullManifest), StandardCharsets.UTF_8);
+        writeText(folder.resolve("manifest.json"), pretty.toJson(fullManifest));
     }
 
     /** Write a file from the game to the pack, at a path like "assets/somemod/textures/block/thing.png". */
@@ -127,6 +225,18 @@ public final class PackWriter {
         Path file = folder.resolve(path);
         Files.createDirectories(file.getParent());
         Files.write(file, contents);
+    }
+
+    private static void writeText(Path file, String text) throws IOException {
+        Files.write(file, text.getBytes(StandardCharsets.UTF_8));
+    }
+
+    private static JsonArray strings(List<String> values) {
+        JsonArray array = new JsonArray();
+        for (String value : values) {
+            array.add(new JsonPrimitive(value));
+        }
+        return array;
     }
 
     private static JsonObject blockJson(Block block) {
@@ -137,19 +247,22 @@ public final class PackWriter {
         json.addProperty("defaultState", block.defaultState());
 
         JsonObject properties = new JsonObject();
-        block.properties().forEach((name, values) -> {
-            JsonArray array = new JsonArray();
-            values.forEach(array::add);
-            properties.add(name, array);
-        });
+        for (Map.Entry<String, List<String>> entry : block.properties().entrySet()) {
+            properties.add(entry.getKey(), strings(entry.getValue()));
+        }
         json.add("properties", properties);
 
         JsonObject common = new JsonObject();
         List<String> sharedNames = new ArrayList<>();
         if (!block.states().isEmpty()) {
             for (Map.Entry<String, JsonElement> entry : block.states().get(0).attributes().entrySet()) {
-                boolean shared = block.states().stream()
-                        .allMatch(state -> entry.getValue().equals(state.attributes().get(entry.getKey())));
+                boolean shared = true;
+                for (State state : block.states()) {
+                    if (!entry.getValue().equals(state.attributes().get(entry.getKey()))) {
+                        shared = false;
+                        break;
+                    }
+                }
                 if (shared) {
                     common.add(entry.getKey(), entry.getValue());
                     sharedNames.add(entry.getKey());
@@ -162,14 +275,17 @@ public final class PackWriter {
         for (State state : block.states()) {
             JsonObject stateJson = new JsonObject();
             stateJson.addProperty("state", state.name());
-            state.attributes().forEach((name, value) -> {
-                if (!sharedNames.contains(name)) {
-                    stateJson.add(name, value);
+            for (Map.Entry<String, JsonElement> entry : state.attributes().entrySet()) {
+                if (!sharedNames.contains(entry.getKey())) {
+                    stateJson.add(entry.getKey(), entry.getValue());
                 }
-            });
+            }
             states.add(stateJson);
         }
         json.add("states", states);
+        if (block.legacy() != null) {
+            json.add("legacy", block.legacy());
+        }
         return json;
     }
 }

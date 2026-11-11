@@ -1,0 +1,15 @@
+plugins {
+    id 'java'
+    id 'net.neoforged.moddev.legacyforge' version '2.0.148'
+}
+
+ext.minecraftVersion = '1.19.4'
+ext.loader = 'forge'
+ext.javaRelease = 17
+apply from: '../shared.gradle'
+
+base.archivesName = 'mcedit_exporter-1.19.4-forge'
+
+legacyForge {
+    version = '1.19.4-45.4.5'
+}

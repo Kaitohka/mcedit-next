@@ -19,11 +19,12 @@ import lz4.block
 
 from mceditlib import nbt
 from mceditlib.anvil.adapter import AnvilChunkFormatError, AnvilWorldAdapter
+from mceditlib.anvil import format_profile
 from mceditlib.anvil.format_profile import MINECRAFT_1_21, profileForDataVersion
 from mceditlib.anvil.modern import ModernAnvilAdapter, bitsForPalette, unpackIndices
 from mceditlib.anvil.worldfolder import AnvilWorldFolder
 from mceditlib.blocktypes import id_limit
-from mceditlib.blocktypes.modern import ModernBlockTypeSet, STATES_PER_ID, joinNameAndProperties
+from mceditlib.blocktypes.modern import ModernBlockTypeSet, STATES_PER_ID, joinNameAndProperties, paletteEntryState
 from mceditlib.exceptions import LevelFormatError, RegionFormatError
 from mceditlib.findadapter import findAdapter
 from mceditlib.pc.regionfile import RegionFile
@@ -192,6 +193,69 @@ def testTooFewLongsIsAnError():
         unpackIndices(numpy.zeros(3, ">u8"), 4, 4096)
 
 
+def packSpanning(values, bits):
+    """ Pack values as one run of bits from the lowest up, as the game did before 1.16. """
+    total = 0
+    for i, value in enumerate(values):
+        total |= int(value) << (i * bits)
+    count = (len(values) * bits + 63) // 64
+    return numpy.array([(total >> (64 * i)) & 0xffffffffffffffff for i in range(count)], dtype=">u8")
+
+
+@pytest.mark.parametrize("bits", [4, 5, 7, 9, 13])
+def testSpanningIndicesUnpack(bits):
+    values = numpy.random.RandomState(bits).randint(0, 1 << bits, 4096)
+    longs = packSpanning(values, bits)
+    assert len(longs) == 4096 * bits // 64
+    assert (unpackIndices(longs, bits, 4096, spanning=True) == values).all()
+
+
+def testSpanningHeightmapUnpacks():
+    # A heightmap before 1.16: 256 heights of 9 bits in 36 longs.
+    heights = numpy.arange(256) % 257
+    longs = packSpanning(heights, 9)
+    assert len(longs) == 36
+    assert (unpackIndices(longs, 9, 256, spanning=True) == heights).all()
+
+
+# --- Palette entries ---
+
+def compound(**tags):
+    tag = nbt.TAG_Compound()
+    for key, value in tags.items():
+        tag[key] = value
+    return tag
+
+
+def properties(**values):
+    return compound(**{key: nbt.TAG_String(value) for key, value in values.items()})
+
+
+@pytest.mark.parametrize("entry, expected", [
+    (compound(Name=nbt.TAG_String("minecraft:stone")), ("minecraft:stone", None)),
+    (compound(Name=nbt.TAG_String("minecraft:oak_log"), Properties=properties(axis="x")),
+     ("minecraft:oak_log", [("axis", "x")])),
+    (compound(id=nbt.TAG_String("minecraft:oak_log"), properties=properties(axis="z")),
+     ("minecraft:oak_log", [("axis", "z")])),
+    (nbt.TAG_String("minecraft:oak_log"), ("minecraft:oak_log", None)),
+    (nbt.TAG_String("minecraft:oak_log[axis=x]"), ("minecraft:oak_log", [("axis", "x")])),
+    (compound(**{"": nbt.TAG_String("minecraft:air")}), ("minecraft:air", None)),
+])
+def testPaletteEntryForms(entry, expected):
+    assert paletteEntryState(entry) == expected
+
+
+def testLeftOutPropertiesMeanTheDefaultState():
+    types = ModernBlockTypeSet(MINECRAFT_1_21)
+    IDs, metas = types.paletteTables([nbt.TAG_String("minecraft:oak_log"),
+                                      compound(id=nbt.TAG_String("minecraft:oak_stairs")),
+                                      compound(Name=nbt.TAG_String("minecraft:oak_log"), Properties=properties(axis="y"))])
+    assert types.statesByID[IDs[0], metas[0]] == "minecraft:oak_log[axis=y]"
+    assert types.statesByID[IDs[1], metas[1]] == types["minecraft:oak_stairs"].nameAndState
+    assert (IDs[0], metas[0]) == (IDs[2], metas[2])
+    assert not types.unresolvedBlockReport()
+
+
 @pytest.mark.parametrize("size, bits", [(1, 0), (2, 1), (3, 2), (4, 2), (5, 3), (16, 4), (17, 5), (1024, 10)])
 def testBitsForPalette(size, bits):
     assert bitsForPalette(size) == bits
@@ -200,9 +264,45 @@ def testBitsForPalette(size, bits):
 # --- Format profiles ---
 
 @pytest.mark.parametrize("dataVersion, expected", [(3953, MINECRAFT_1_21), (3955, MINECRAFT_1_21), (3952, None),
-                                                   (3956, None), (4080, None), (1343, None)])
+                                                   (3956, None), (1343, None)])
 def testProfiles(dataVersion, expected):
     assert profileForDataVersion(dataVersion) == expected
+
+
+@pytest.mark.parametrize("dataVersion, name", [(1519, "1.13"), (2586, "1.16.5"), (4080, "1.21.2"), (5023, "26.3")])
+def testEveryReleaseHasAProfile(dataVersion, name):
+    assert format_profile.releaseForDataVersion(dataVersion) == name
+    assert profileForDataVersion(dataVersion).acceptsDataVersion(dataVersion)
+
+
+def testEveryListedReleaseHasAProfileWithABlockPack():
+    for release, dataVersion in format_profile.RELEASES:
+        profile = profileForDataVersion(dataVersion)
+        assert profile is not None, release
+        assert profile.hasBlockPack, release
+
+
+def testCheckedFormatsAreWritable():
+    assert MINECRAFT_1_21.writable
+    assert profileForDataVersion(5023).writable
+    assert profileForDataVersion(1519).writable
+
+
+def testLowercasePaletteKeysFrom26_3():
+    assert profileForDataVersion(4903).paletteNameKey == "Name"
+    assert profileForDataVersion(5023).paletteNameKey == "id"
+    assert profileForDataVersion(5023).palettePropertiesKey == "properties"
+
+
+@pytest.mark.parametrize("dataVersion, heights", [(2730, (0, 256)), (2860, (-64, 320))])
+def testDefaultHeights(dataVersion, heights):
+    assert profileForDataVersion(dataVersion).defaultHeights == heights
+    assert profileForDataVersion(dataVersion).dimensionTypeHeights("minecraft:overworld") == heights
+
+
+def testDimensionsFolderFrom26_1():
+    assert profileForDataVersion(4786).dimensionFolder("minecraft:the_nether") == "dimensions/minecraft/the_nether"
+    assert profileForDataVersion(4671).dimensionFolder("minecraft:the_nether") == "DIM-1"
 
 
 @pytest.mark.parametrize("dimName, key", [("", "minecraft:overworld"), ("DIM-1", "minecraft:the_nether"),
@@ -450,7 +550,7 @@ def testModernWorldGoesToTheModernAdapter(world):
     assert isinstance(findAdapter(str(world / "level.dat"), readonly=True), ModernAnvilAdapter)
 
 
-@pytest.mark.parametrize("dataVersion", [1451, 3700, 3956, 4671])
+@pytest.mark.parametrize("dataVersion", [1451, 3956, 4672, 5024])
 def testUnsupportedVersionsAreRefusedWithoutTouchingTheWorld(tmp_path, dataVersion):
     world = tmp_path / "world"
     world.mkdir()
@@ -463,6 +563,26 @@ def testUnsupportedVersionsAreRefusedWithoutTouchingTheWorld(tmp_path, dataVersi
     assert snapshot(world) == before
 
 
+def testReleaseWithNoBlockPackIsRefusedWithoutTouchingTheWorld(tmp_path, monkeypatch):
+    monkeypatch.setattr(format_profile, "PACK_FOLDER", str(tmp_path / "no packs"))
+    world = tmp_path / "world"
+    world.mkdir()
+    writeLevelDat(world, 3700)
+    before = snapshot(world)
+    with pytest.raises(LevelFormatError, match="1.20.4"):
+        findAdapter(str(world))
+    assert snapshot(world) == before
+
+
+def testFormatsNotCheckedInTheGameOpenReadOnly(world, monkeypatch):
+    monkeypatch.setattr(format_profile, "PROFILES", tuple(p._replace(writable=False) for p in format_profile.PROFILES))
+    adapter = findAdapter(str(world))
+    try:
+        assert adapter.readonly
+    finally:
+        adapter.close()
+
+
 def testDamagedLevelDatFallsBackToBackup(world):
     shutil.copy(world / "level.dat", world / "level.dat_old")
     (world / "level.dat").write_bytes(b"not a level")
@@ -472,7 +592,7 @@ def testDamagedLevelDatFallsBackToBackup(world):
 def testUnsupportedVersionIsFoundInBackupToo(tmp_path):
     world = tmp_path / "world"
     world.mkdir()
-    writeLevelDat(world, 4671)
+    writeLevelDat(world, 4672)  # a snapshot
     shutil.copy(world / "level.dat", world / "level.dat_old")
     (world / "level.dat").write_bytes(b"not a level")
     with pytest.raises(LevelFormatError):
@@ -509,7 +629,8 @@ def mixedSection(y, **kwargs):
 def openWorld(world, chunks, dimName=""):
     regions = {}
     for chunk in chunks:
-        cx, cz = chunk["xPos"].value, chunk["zPos"].value
+        position = chunk["Level"] if "Level" in chunk else chunk
+        cx, cz = position["xPos"].value, position["zPos"].value
         regions.setdefault((cx >> 5, cz >> 5), {})[cx, cz] = chunk
     for (rx, rz), found in regions.items():
         folder = world / dimName / "region" if dimName else world / "region"
@@ -661,21 +782,136 @@ def testUnknownDimensionTypeWithNoChunksUsesDefaultHeight(world):
     assert WorldEditor(str(world), readonly=True).adapter.heightRange("dimensions/none/here") == (-64, 320)
 
 
-def testOlderChunkInNewWorldIsAnErrorNotADeletion(world):
-    old = nbt.TAG_Compound()
-    old["DataVersion"] = nbt.TAG_Int(1343)
-    old["Level"] = nbt.TAG_Compound()
-    writeRegion(world / "region" / "r.0.0.mca", {(0, 0): old})
-    editor = WorldEditor(str(world), readonly=True)
+def numberedChunk(cx, cz, blocks, data, biomes=None):
+    """ A chunk as 1.12.2 saved it, with one section at Y 0. """
+    level = nbt.TAG_Compound()
+    level["xPos"] = nbt.TAG_Int(cx)
+    level["zPos"] = nbt.TAG_Int(cz)
+    level["TerrainPopulated"] = nbt.TAG_Byte(1)
+    section = nbt.TAG_Compound()
+    section["Y"] = nbt.TAG_Byte(0)
+    section["Blocks"] = nbt.TAG_Byte_Array(numpy.asarray(blocks, "uint8").ravel())
+    data = numpy.asarray(data, "uint8").ravel()
+    section["Data"] = nbt.TAG_Byte_Array((data[::2] | data[1::2] << 4).astype("uint8"))
+    section["BlockLight"] = nbt.TAG_Byte_Array(numpy.zeros(2048, "uint8"))
+    section["SkyLight"] = nbt.TAG_Byte_Array(numpy.full(2048, 0xff, "uint8"))
+    level["Sections"] = nbt.TAG_List([section])
+    if biomes is not None:
+        level["Biomes"] = nbt.TAG_Byte_Array(numpy.asarray(biomes, "uint8"))
+    level["Entities"] = nbt.TAG_List(list_type=nbt.ID_COMPOUND)
+    level["TileEntities"] = nbt.TAG_List(list_type=nbt.ID_COMPOUND)
+    root = nbt.TAG_Compound()
+    root["DataVersion"] = nbt.TAG_Int(1343)
+    root["Level"] = level
+    return root
+
+
+def testChunkFrom1_12InNewWorldIsReadThroughTheFlatteningTable(world):
+    blocks = numpy.zeros(4096, "uint8")
+    data = numpy.zeros(4096, "uint8")
+    blocks[0], blocks[1], data[1], blocks[2], data[2] = 1, 1, 1, 35, 14
+    editor = openWorld(world, [numberedChunk(0, 0, blocks, data, biomes=numpy.full(256, 129))])
     before = snapshot(world)
-    with pytest.raises(AnvilChunkFormatError, match="older"):
-        editor.getDimension().getChunk(0, 0)
+    chunk = editor.getDimension().getChunk(0, 0)
+    section = chunk.getSection(0)
+    names = [editor.blocktypes.statesByID[int(section.Blocks.flat[i]), int(section.Data.flat[i])] for i in range(4)]
+    assert names == ["minecraft:stone", "minecraft:granite", "minecraft:red_wool", "minecraft:air"]
+    assert {editor.adapter.biomeNames[int(ID)] for ID in numpy.unique(chunk.Biomes)} == {"minecraft:sunflower_plains"}
     assert snapshot(world) == before
+
+
+def testUnknownNumberedBlockKeepsItsNumber(world):
+    # Block 300, as a mod might have had: 300 & 0xff in Blocks, and 300 >> 8 in Add.
+    chunk = numberedChunk(0, 0, numpy.full(4096, 300 & 0xff, "uint8"), numpy.zeros(4096, "uint8"))
+    chunk["Level"]["Sections"][0]["Add"] = nbt.TAG_Byte_Array(numpy.full(2048, 0x11, "uint8"))
+    editor = openWorld(world, [chunk])
+    section = editor.getDimension().getChunk(0, 0).getSection(0)
+    assert editor.blocktypes.statesByID[int(section.Blocks.flat[0]), 0] == "mcedit:numbered_block_300"
+
+
+def testNumberedBlockWithPropertiesIsRead(world):
+    # 1.12.2's oak stairs facing east
+    editor = openWorld(world, [numberedChunk(0, 0, numpy.full(4096, 53, "uint8"), numpy.zeros(4096, "uint8"))])
+    section = editor.getDimension().getChunk(0, 0).getSection(0)
+    state = editor.blocktypes.statesByID[int(section.Blocks.flat[0]), int(section.Data.flat[0])]
+    assert state == "minecraft:oak_stairs[facing=east,half=bottom,shape=straight,waterlogged=false]"
 
 
 def testChunkFrom118IsStillRead(world):
     editor = openWorld(world, [makeChunk(0, 0, [mixedSection(0)], dataVersion=2975)])
     assert editor.getDimension().getChunk(0, 0).getSection(0) is not None
+
+
+def legacyChunk(cx, cz, dataVersion, palette, indices, biomes=None, entities=(), tileEntities=()):
+    """ A chunk as saved by 1.13 to 1.17, with one section at Y 0. """
+    level = nbt.TAG_Compound()
+    level["xPos"] = nbt.TAG_Int(cx)
+    level["zPos"] = nbt.TAG_Int(cz)
+    level["Status"] = nbt.TAG_String("full")
+    section = nbt.TAG_Compound()
+    section["Y"] = nbt.TAG_Byte(0)
+    section["Palette"] = nbt.TAG_List(list(palette))
+    bits = max(4, bitsForPalette(len(palette)))
+    if dataVersion < 2529:
+        section["BlockStates"] = nbt.TAG_Long_Array(packSpanning(indices, bits))
+    else:
+        section["BlockStates"] = nbt.TAG_Long_Array(packIndices(indices, bits))
+    level["Sections"] = nbt.TAG_List([section])
+    if biomes is not None:
+        level["Biomes"] = nbt.TAG_Int_Array(numpy.asarray(biomes, ">u4"))
+    level["Entities"] = nbt.TAG_List(list(entities), list_type=nbt.ID_COMPOUND)
+    level["TileEntities"] = nbt.TAG_List(list(tileEntities), list_type=nbt.ID_COMPOUND)
+    root = nbt.TAG_Compound()
+    root["DataVersion"] = nbt.TAG_Int(dataVersion)
+    root["Level"] = level
+    return root
+
+
+# Enough states for 5 bit indexes, which run across longs when packed as before 1.16.
+LEGACY_PALETTE = [state("minecraft:air")] + [state("minecraft:oak_log", axis=a) for a in "xyz"] + [
+    state("minecraft:redstone_wire", power=str(p), east="none", north="none", south="none", west="none")
+    for p in range(14)]
+
+
+@pytest.mark.parametrize("dataVersion", [1631, 2230, 2586, 2730])
+def testChunksFrom113To117AreRead(world, dataVersion):
+    indices = numpy.random.RandomState(dataVersion).randint(0, len(LEGACY_PALETTE), 4096)
+    editor = openWorld(world, [legacyChunk(0, 0, dataVersion, LEGACY_PALETTE, indices)])
+    section = editor.getDimension().getChunk(0, 0).getSection(0)
+    types = editor.blocktypes
+    names = [types.statesByID[int(ID), int(meta)] for ID, meta in zip(section.Blocks.ravel(), section.Data.ravel())]
+    expected = [joinNameAndProperties(LEGACY_PALETTE[i]["Name"].value,
+                                      [(k, v.value) for k, v in LEGACY_PALETTE[i].get("Properties", {}).items()])
+                for i in indices]
+    assert names == expected
+
+
+def testLegacyChunkHasItsEntitiesAndBlockEntities(world):
+    zombie = nbt.TAG_Compound()
+    zombie["id"] = nbt.TAG_String("minecraft:zombie")
+    chest = nbt.TAG_Compound()
+    chest["id"] = nbt.TAG_String("minecraft:chest")
+    for key, value in ("x", 1), ("y", 2), ("z", 3):
+        chest[key] = nbt.TAG_Int(value)
+    editor = openWorld(world, [legacyChunk(0, 0, 1976, LEGACY_PALETTE, numpy.zeros(4096, "intp"),
+                                           entities=[zombie], tileEntities=[chest])])
+    chunk = editor.getDimension().getChunk(0, 0)
+    assert [e.id for e in chunk.Entities] == ["minecraft:zombie"]
+    assert [e.id for e in chunk.TileEntities] == ["minecraft:chest"]
+
+
+@pytest.mark.parametrize("biomes", [numpy.full(256, 6), numpy.full(1024, 6)])
+def testLegacyBiomesAreReadByNumber(world, biomes):
+    editor = openWorld(world, [legacyChunk(0, 0, 2230, LEGACY_PALETTE, numpy.zeros(4096, "intp"), biomes)])
+    chunk = editor.getDimension().getChunk(0, 0)
+    names = {editor.adapter.biomeNames[int(ID)] for ID in numpy.unique(chunk.Biomes)}
+    assert names == {"minecraft:swamp"}
+
+
+def testLegacyChunkIsSavedInItsOwnLayout(world):
+    chunk = openWorld(world, [legacyChunk(0, 0, 2586, LEGACY_PALETTE, numpy.zeros(4096, "intp"))])
+    tag = chunk.adapter.readChunk(0, 0, "").buildNBTTag()
+    assert "Level" in tag and tag["DataVersion"].value == 2586
 
 
 def testBadPaletteIndexIsAFormatError(world):
@@ -1044,3 +1280,41 @@ def testRealWorldIsUnchangedByAllOfThis(tmp_path):
     editor.syncToDisk()
     editor.close()
     assert snapshot(folder) == before
+
+
+def tileEntity(x, y, z, entityID, **values):
+    tag = nbt.TAG_Compound()
+    tag["id"] = nbt.TAG_String(entityID)
+    for key, value in (("x", x), ("y", y), ("z", z)):
+        tag[key] = nbt.TAG_Int(value)
+    for key, value in values.items():
+        tag[key] = value
+    return tag
+
+
+def testNumberedBlocksTakeWhatTheirBlockEntitiesSay(world):
+    blocks = numpy.zeros(4096, "uint8")
+    data = numpy.zeros(4096, "uint8")
+    placed = {0: (26, 0), 1: (176, 0), 2: (140, 0), 3: (144, 1), 4: (140, 0), 5: (25, 0)}
+    for x, (number, meta) in placed.items():
+        blocks[x], data[x] = number, meta
+    chunk = numberedChunk(0, 0, blocks, data)
+    chunk["Level"]["TileEntities"] = nbt.TAG_List([
+        tileEntity(0, 0, 0, "minecraft:bed", color=nbt.TAG_Int(11)),
+        tileEntity(1, 0, 0, "minecraft:banner", Base=nbt.TAG_Int(4)),
+        tileEntity(2, 0, 0, "minecraft:flower_pot", Item=nbt.TAG_String("minecraft:red_flower"), Data=nbt.TAG_Int(1)),
+        tileEntity(3, 0, 0, "minecraft:skull", SkullType=nbt.TAG_Byte(4), Rot=nbt.TAG_Byte(6)),
+        tileEntity(4, 0, 0, "FlowerPot", Item=nbt.TAG_Int(38), Data=nbt.TAG_Int(0)),
+        tileEntity(5, 0, 0, "minecraft:noteblock", note=nbt.TAG_Byte(7)),
+    ])
+    editor = openWorld(world, [chunk])
+    dim = editor.getDimension()
+    names = [dim.getBlock(x, 0, 0).nameAndState for x in range(6)]
+    assert names == [
+        "minecraft:blue_bed[facing=south,occupied=false,part=foot]",
+        "minecraft:blue_banner[rotation=0]",
+        "minecraft:potted_blue_orchid",
+        "minecraft:creeper_head[powered=false,rotation=6]",  # 1.21 heads have had "powered" since 1.20
+        "minecraft:potted_poppy",
+        "minecraft:note_block[instrument=harp,note=7,powered=false]",
+    ]

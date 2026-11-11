@@ -82,6 +82,15 @@ class ResourceLoader(object):
                 if re.match(r'assets/[^/]+/models/block', name):
                     yield name
 
+    def optifineConnectedPaths(self):
+        """ OptiFine's connected texture properties files, as Continuity reads them, each once. """
+        seen = set()
+        for zf in self.zipFiles:
+            for name in zf.namelist():
+                if name not in seen and re.match(r'assets/[^/]+/optifine/ctm/.+\.properties$', name):
+                    seen.add(name)
+                    yield name
+
     def blockTexturePaths(self):
         seen = set()
         for zf in self.zipFiles:

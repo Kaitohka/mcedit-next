@@ -86,6 +86,8 @@ def writeAwkwardPack(folder):
     """
     Blocks found in real mods: `made_in_code` names a model with no file, as a model made in code does. `filler` has an
     empty model and no texture. `partly` has one model made in code for one state, and a real one for another.
+    `own_box` has a small box of its own and a cube for a parent, as AE2's charger does. `composite` is made of two
+    models by NeoForge's composite loader, plus a third that is hidden. `obj` uses a loader that MCEdit doesn't have.
     """
     def block(name, particle, **common):
         result = libraryTests.machine("demomod:" + name)
@@ -95,7 +97,10 @@ def writeAwkwardPack(folder):
     blocks = [block("made_in_code", "minecraft:block/gold_block"),
               block("made_in_code_no_texture", "minecraft:missingno"),
               block("filler", "minecraft:missingno", modelSource="fallback"),
-              block("partly", "minecraft:block/gold_block")]
+              block("partly", "minecraft:block/gold_block"),
+              block("own_box", "minecraft:block/gold_block"),
+              block("composite", "minecraft:block/gold_block"),
+              block("obj", "minecraft:block/gold_block")]
     libraryTests.writePack(folder, blocks)
     for name in "made_in_code", "made_in_code_no_texture":
         writeAsset(folder, "assets/demomod/blockstates/%s.json" % name, {"variants": {"": {"model": "demomod:block/from_code"}}})
@@ -103,6 +108,22 @@ def writeAwkwardPack(folder):
     writeAsset(folder, "assets/demomod/models/block/empty.json", {"textures": {}})
     writeAsset(folder, "assets/demomod/blockstates/partly.json", {"variants": {
         "mode=off": {"model": "minecraft:block/stone"}, "mode=on": {"model": "demomod:block/from_code"}}})
+
+    box = {"from": [4, 0, 4], "to": [12, 8, 12], "faces": {face: {"texture": "#0"} for face in
+                                                            ("down", "up", "north", "south", "west", "east")}}
+    for name in "own_box", "composite", "obj":
+        writeAsset(folder, "assets/demomod/blockstates/%s.json" % name, {"variants": {"": {"model": "demomod:block/" + name}}})
+    writeAsset(folder, "assets/demomod/models/block/own_box.json", {
+        "parent": "minecraft:block/cube_all", "textures": {"0": "minecraft:block/stone"}, "elements": [box]})
+    writeAsset(folder, "assets/demomod/models/block/composite.json", {
+        "parent": "minecraft:block/block", "loader": "neoforge:composite",
+        "textures": {"particle": "minecraft:block/gold_block"},
+        "children": {"base": {"textures": {"0": "minecraft:block/stone"}, "elements": [box]},
+                     "top": {"textures": {"0": "minecraft:block/dirt"}, "elements": [dict(box, **{"from": [6, 8, 6], "to": [10, 12, 10]})]},
+                     "hidden": {"textures": {"0": "minecraft:block/dirt"}, "elements": [box]}},
+        "visibility": {"hidden": False}})
+    writeAsset(folder, "assets/demomod/models/block/obj.json", {
+        "parent": "minecraft:block/block", "loader": "neoforge:obj", "model": "demomod:models/block/obj.obj"})
     return folder
 
 
@@ -132,6 +153,9 @@ def awkward(tmp_path):
     ("filler[mode=off]", True, 0),
     ("partly[mode=off]", True, 6),
     ("partly[mode=on]", True, 6),
+    ("own_box[mode=off]", True, 6),  # only its own box, not its parent's cube as well
+    ("composite[mode=off]", True, 12),  # both shown parts
+    ("obj[mode=off]", True, 6),  # a cube with its particle texture
 ])
 def testBlocksWithAwkwardModels(awkward, name, hasModel, quads):
     blocktypes, models = awkward
@@ -145,6 +169,13 @@ def testModelMadeInCodeWithNoTextureIsAQuestionMark(awkward):
     blocktypes, models = awkward
     block = blocktypes["demomod:made_in_code_no_texture[mode=off]"]
     assert not models.hasModel(block.ID, block.meta)
+
+
+@needsJar
+def testCompositePartsUseTheirOwnTextures(awkward):
+    blocktypes, models = awkward
+    assert models.firstTextures["demomod:composite[mode=off]"] == "assets/minecraft/textures/block/stone.png"
+    assert "MCEDIT_UNKNOWN" not in models.firstTextures["demomod:own_box[mode=off]"]
 
 
 # --- Definitions ---

@@ -431,7 +431,9 @@ class SectionUpdate(object):
         if below:
             areaLights[:2, 2:-2, 2:-2, ] = Light(below)[-2:, :, :]
 
-        nx, ny, nz = self.blocktypes.useNeighborBrightness[self.areaBlocks].nonzero()
+        nx, ny, nz = self.neighborBrightnessPositions
+        if not len(nx):
+            return areaLights[1:-1, 1:-1, 1:-1]
         nxd = nx
         nx = nx + 1
         nxi = nx + 1
@@ -455,6 +457,11 @@ class SectionUpdate(object):
         areaLights[nx, ny, nz] = neighborBrightness
 
         return areaLights[1:-1, 1:-1, 1:-1]
+
+    @lazyprop
+    def neighborBrightnessPositions(self):
+        """ Where in the area there are blocks lit as brightly as the brightest block next to them, like slabs. """
+        return self.blocktypes.useNeighborBrightness[self.areaBlocks].nonzero()
 
     @lazyprop
     def areaBlockLights(self):

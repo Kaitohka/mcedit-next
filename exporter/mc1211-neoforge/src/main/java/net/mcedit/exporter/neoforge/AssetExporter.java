@@ -33,6 +33,8 @@ import java.util.Set;
 final class AssetExporter {
     /** The game's own resource pack, whose files MCEdit already has. */
     private static final String VANILLA_PACK_ID = "vanilla";
+    /** NeoForge's loader for a model made of other models, which MCEdit can read. */
+    private static final String COMPOSITE_LOADER = "neoforge:composite";
 
     private final ResourceManager resources;
     private final Path folder;
@@ -43,7 +45,7 @@ final class AssetExporter {
 
     /**
      * @param hasElements  whether the model or a parent has elements, which are what MCEdit draws
-     * @param usesLoader   whether the model or a parent needs a custom model loader, which MCEdit doesn't have
+     * @param usesLoader   whether the model or a parent needs a custom model loader that MCEdit doesn't have
      */
     private record ModelInfo(boolean hasElements, boolean usesLoader) {
     }
@@ -121,26 +123,43 @@ final class AssetExporter {
             JsonObject json = readJson(file);
             if (json != null) {
                 copy(file);
-                boolean hasElements = json.has("elements");
-                boolean usesLoader = json.has("loader");
-                if (json.has("textures")) {
-                    json.getAsJsonObject("textures").entrySet().forEach(entry -> {
-                        String value = entry.getValue().getAsString();
-                        if (!value.startsWith("#")) {
-                            exportTexture(value);
-                        }
-                    });
-                }
-                if (json.has("parent")) {
-                    ModelInfo parent = readModel(parse(json.get("parent").getAsString()));
-                    hasElements |= parent.hasElements();
-                    usesLoader |= parent.usesLoader();
-                }
-                info = new ModelInfo(hasElements, usesLoader);
+                info = readModelJson(json);
             }
         }
         models.put(name, info);
         return info;
+    }
+
+    /** Copy what a model uses, its parents and the models it is made of, and find out what MCEdit can draw of it. */
+    private ModelInfo readModelJson(JsonObject json) {
+        boolean hasElements = json.has("elements");
+        boolean usesLoader = false;
+        if (json.has("loader")) {
+            if (COMPOSITE_LOADER.equals(json.get("loader").getAsString()) && json.has("children")) {
+                // Made of other models, each written out in full here. MCEdit draws them all.
+                for (Map.Entry<String, JsonElement> child : json.getAsJsonObject("children").entrySet()) {
+                    ModelInfo part = readModelJson(child.getValue().getAsJsonObject());
+                    hasElements |= part.hasElements();
+                    usesLoader |= part.usesLoader();
+                }
+            } else {
+                usesLoader = true;
+            }
+        }
+        if (json.has("textures")) {
+            json.getAsJsonObject("textures").entrySet().forEach(entry -> {
+                String value = entry.getValue().getAsString();
+                if (!value.startsWith("#")) {
+                    exportTexture(value);
+                }
+            });
+        }
+        if (json.has("parent")) {
+            ModelInfo parent = readModel(parse(json.get("parent").getAsString()));
+            hasElements |= parent.hasElements();
+            usesLoader |= parent.usesLoader();
+        }
+        return new ModelInfo(hasElements, usesLoader);
     }
 
     /** Copy a texture, with the file that says how it animates if it has one. */

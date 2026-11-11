@@ -1,0 +1,8 @@
+{
+  "loader": "neoforge:obj",
+  "model": "mcedit_testmod:models/block/obj_model.obj",
+  "flip_v": true,
+  "textures": {
+    "particle": "mcedit_testmod:block/obj_model"
+  }
+}

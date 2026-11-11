@@ -39,6 +39,9 @@ def _colorsFromClimate(colormap, temperatures, rainfalls):
 
 
 def _pixel(color):
+    if isinstance(color, str):
+        # Biome definitions give colors as numbers, and since 1.21.11 as "#rrggbb".
+        color = int(color.lstrip("#"), 16)
     return color & 0xff, (color >> 8) & 0xff, (color >> 16) & 0xff, 0xff
 
 

@@ -1,0 +1,28 @@
+// Unimined, by wagyourtail, builds mods for old versions of Forge with today's Gradle. Forge for 1.8.9 to 1.9.4
+// runs mods with Searge's names for the game, which the jar is remapped to from MCP's.
+plugins {
+    id 'java'
+    id 'xyz.wagyourtail.unimined' version '1.4.1'
+}
+
+ext.minecraftVersion = '1.9.4'
+ext.loader = 'forge'
+ext.javaRelease = 8
+apply from: '../shared.gradle'
+
+base.archivesName = 'mcedit_exporter-1.9.4-forge'
+
+repositories {
+    mavenCentral()
+}
+
+unimined.minecraft {
+    version '1.9.4'
+    mappings {
+        searge()
+        mcp('stable', '26-1.9.4')
+    }
+    minecraftForge {
+        loader '12.17.0.2317-1.9.4'
+    }
+}

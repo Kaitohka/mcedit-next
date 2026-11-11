@@ -17,7 +17,7 @@ log = logging.getLogger(__name__)
 
 # These appear in a world's list of mods, but their blocks are the game's own or they have none.
 # The exporter is here because anyone who exports will have it in all of their worlds.
-MODS_WITHOUT_OWN_BLOCKS = ("minecraft", "neoforge", "forge", "fml", "mcp", "mcedit_exporter")
+MODS_WITHOUT_OWN_BLOCKS = ("minecraft", "neoforge", "forge", "fml", "mcp", "mcedit_exporter", "FML", "Forge")
 
 _packFolders = []
 _packCache = {}  # path -> (modification time, BlockPack)
@@ -111,7 +111,9 @@ def selectPacks(mods, profile):
             selection.problems.append("%s could not be read: %s" % (os.path.basename(path), e))
             continue
 
-        if not profile.firstDataVersion <= pack.dataVersion <= profile.lastDataVersion:
+        accepts = getattr(profile, "acceptsPack", None)
+        fits = accepts(pack) if accepts else profile.firstDataVersion <= pack.dataVersion <= profile.lastDataVersion
+        if not fits:
             selection.problems.append("%s is for Minecraft %s, which is not this world's version."
                                       % (os.path.basename(path), pack.manifest.get("minecraftVersion")))
             continue

@@ -5,6 +5,7 @@ import gc
 import logging
 import os
 import sys
+import time
 
 import argparse
 import numpy
@@ -486,6 +487,9 @@ class MCEditApp(QtWidgets.QApplication):
 
     idleTime = 333
 
+    # Seconds of chunk loading to do each time the loading timer fires, before letting the view draw again.
+    loadTimeSlice = 0.015
+
     # --- Global chunk loading timer ---
 
     @profiler.function
@@ -497,8 +501,12 @@ class MCEditApp(QtWidgets.QApplication):
 
             self.loadTimer.setInterval(self.idleTime)
             return
+        # Each step of the loader is short. Taking several at a time spends less of it going round Qt's event loop.
+        deadline = time.perf_counter() + self.loadTimeSlice
         try:
             next(session.loader)
+            while time.perf_counter() < deadline:
+                next(session.loader)
             self.loadTimer.setInterval(0)
         except StopIteration:
             log.debug("Loading timer idle (no chunks)")
@@ -958,6 +966,7 @@ class MCEditApp(QtWidgets.QApplication):
         self.pluginsDialog.exec()
 
     def toggleDeveloperMode(self, enable):
+        profiler.getProfiler().enabled = bool(enable)
         if enable:
             self.mainWindow.menuBar().addAction(self.debugMenu.menuAction())
             self.mainWindow.addDockWidget(Qt.RightDockWidgetArea, self.inspectorDockWidget)

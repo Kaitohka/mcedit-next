@@ -1,0 +1,25 @@
+// Forge from 1.21.10 is built with ForgeGradle 7, which needs a newer Gradle than the other targets: this target has
+// its own wrapper. Forge runs with Mojang's names for the game, so the jar is used as it is compiled.
+plugins {
+    id 'java'
+    id 'net.minecraftforge.gradle' version '[7.0.17,8)'
+}
+
+ext.minecraftVersion = '26.1.2'
+ext.loader = 'forge'
+ext.javaRelease = 25
+apply from: '../shared.gradle'
+
+base.archivesName = 'mcedit_exporter-26.1.2-forge'
+java.toolchain.languageVersion = JavaLanguageVersion.of(25)
+
+repositories {
+    minecraft.mavenizer(it)
+    maven fg.forgeMaven
+    maven fg.minecraftLibsMaven
+    mavenCentral()
+}
+
+dependencies {
+    implementation minecraft.dependency('net.minecraftforge:forge:26.1.2-64.1.6')
+}

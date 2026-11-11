@@ -19,9 +19,10 @@ from mcedit2.util import settings
 from mcedit2.util.directories import getUserFilesDirectory
 from mceditlib import directories
 
-from mceditlib.anvil.format_profile import profileForDataVersion
+from mceditlib.anvil.format_profile import profileForDataVersion, releaseForDataVersion
 from mceditlib.anvil.modern import worldDataVersion
-from mceditlib.blocktypes import pack_library
+from mceditlib import nbt
+from mceditlib.blocktypes import legacy_packs, pack_library
 
 log = logging.getLogger(__name__)
 
@@ -55,9 +56,24 @@ def assetsVersionForWorld(filename):
     isWorld = os.path.isdir(filename) or os.path.basename(filename) in ("level.dat", "level.dat_old")
     if not isWorld:
         return None
+    versions = assetsVersionsForWorld(filename)
+    return versions[-1] if versions else None
+
+
+def assetsVersionsForWorld(filename):
+    """
+    The versions of the game whose assets can show the given world, best first: the release that saved it, then the
+    one its format profile names, which has the same blocks. Empty if it is not a world that needs a particular one.
+    """
+    isWorld = os.path.isdir(filename) or os.path.basename(filename) in ("level.dat", "level.dat_old")
+    if not isWorld:
+        return []
     dataVersion = worldDataVersion(filename)
     profile = profileForDataVersion(dataVersion) if dataVersion is not None else None
-    return profile.assetsVersion if profile is not None else None
+    if profile is None:
+        return []
+    versions = [releaseForDataVersion(dataVersion), profile.assetsVersion]
+    return [v for i, v in enumerate(versions) if v and v not in versions[:i]]
 
 
 def findJarBesideWorld(worldFolder, version):
@@ -74,9 +90,20 @@ def findJarBesideWorld(worldFolder, version):
 
 
 def getModernResourceLoader(filename, version):
+    """
+    :param version: The version of the game to take assets from, or a list of versions that would do, best first.
+        If none is found, the first is asked for.
+    """
     worldFolder = filename if os.path.isdir(filename) else os.path.dirname(filename)
     installs = GetInstalls()
-    jar = findJarBesideWorld(worldFolder, version) or installs.findAssetsJar(version) or installs.requestAssetsJar(version)
+    versions = [version] if isinstance(version, str) else list(version)
+    jar = None
+    for candidate in versions:
+        jar = findJarBesideWorld(worldFolder, candidate) or installs.findAssetsJar(candidate)
+        if jar:
+            break
+    if jar is None:
+        jar = installs.requestAssetsJar(versions[0])
 
     loader = ResourceLoader(jar)
     resourcePack = currentResourcePackOption.value() or None
@@ -102,27 +129,28 @@ def getModernResourceLoader(filename, version):
 
 def getResourceLoaderForFilename(filename):
     filename = os.path.normpath(filename)
-    version = assetsVersionForWorld(filename)
-    if version is not None:
-        return getModernResourceLoader(filename, version)
+    versions = assetsVersionsForWorld(filename)
+    if versions:
+        return getModernResourceLoader(filename, versions)
 
     installs = GetInstalls()
     if not installs.findVersionWithAssets():
         installs.requestAssetsJar(installs._requiredVersion)
 
+    worldFolder = filename if os.path.isdir(filename) else os.path.dirname(filename)
+
     # Is this world inside a MultiMC instance?
     for instance in installs.instances:
         savesFolder = os.path.normpath(instance.saveFileDir)
         if filename.startswith(savesFolder):
-            return instance.getResourceLoader()
+            loader = instance.getResourceLoader()
+            _addLegacyPacks(loader, worldFolder)
+            return loader
 
     # Nope. Use the version and respack chosen in the world list.
     # ... should search for installs matching this one, but vanilla installs are still multi-version...
     loader = getSelectedResourceLoader()
-    if not os.path.isdir(filename):
-        worldFolder = os.path.dirname(filename)
-    else:
-        worldFolder = filename
+    _addLegacyPacks(loader, worldFolder)
     savesFolder = os.path.dirname(worldFolder)
     mcFolder = os.path.dirname(savesFolder)
     modsFolder = os.path.join(mcFolder, "mods")
@@ -131,6 +159,18 @@ def getResourceLoaderForFilename(filename):
         loader.addModsFolder(modsFolder)
 
     return loader
+
+
+def _addLegacyPacks(loader, worldFolder):
+    """ The models and textures of the block packs for a world from 1.12.2 or earlier, made by the exporter. """
+    for name in "level.dat", "level.dat_old":
+        try:
+            levelTag = nbt.load(os.path.join(worldFolder, name))
+        except Exception:
+            continue
+        for pack in legacy_packs.selectLegacyPacks(levelTag).packs:
+            loader.addBlockPack(pack)
+        return
 
 
 def getSelectedResourceLoader():

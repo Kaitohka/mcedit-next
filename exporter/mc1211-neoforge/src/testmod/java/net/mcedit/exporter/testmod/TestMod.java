@@ -1,7 +1,21 @@
 package net.mcedit.exporter.testmod;
 
+import com.google.gson.JsonDeserializationContext;
+import com.google.gson.JsonObject;
 import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.blaze3d.vertex.VertexConsumer;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.MultiBufferSource;
+import net.minecraft.client.renderer.RenderType;
+import net.minecraft.client.renderer.block.model.BakedQuad;
+import net.minecraft.client.renderer.block.model.ItemOverrides;
+import net.minecraft.client.renderer.texture.TextureAtlasSprite;
+import net.minecraft.client.resources.model.BakedModel;
+import net.minecraft.client.resources.model.Material;
+import net.minecraft.client.resources.model.ModelBaker;
+import net.minecraft.client.resources.model.ModelState;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.inventory.InventoryMenu;
 import net.minecraft.client.renderer.blockentity.BlockEntityRenderer;
 import net.minecraft.client.renderer.blockentity.BlockEntityRendererProvider;
 import net.minecraft.core.BlockPos;
@@ -28,10 +42,19 @@ import net.minecraft.world.phys.shapes.VoxelShape;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.common.Mod;
+import net.neoforged.neoforge.client.RenderTypeGroup;
 import net.neoforged.neoforge.client.event.EntityRenderersEvent;
+import net.neoforged.neoforge.client.event.ModelEvent;
+import net.neoforged.neoforge.client.model.IModelBuilder;
+import net.neoforged.neoforge.client.model.geometry.IGeometryBakingContext;
+import net.neoforged.neoforge.client.model.geometry.IGeometryLoader;
+import net.neoforged.neoforge.client.model.geometry.IUnbakedGeometry;
+import net.neoforged.neoforge.client.model.pipeline.QuadBakingVertexConsumer;
 import net.neoforged.neoforge.registries.DeferredBlock;
 import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredRegister;
+
+import java.util.function.Function;
 
 /**
  * One block of each kind that the exporter has to deal with. For testing only, and not part of the built mod.
@@ -62,6 +85,14 @@ public final class TestMod {
     /** Has a model that needs a custom model loader. */
     private static final DeferredBlock<Block> LOADER_MODEL = BLOCKS.registerSimpleBlock("loader_model", solid());
 
+    /** Has a Wavefront .obj model, read by NeoForge's OBJ loader. */
+    private static final DeferredBlock<Block> OBJ_MODEL = BLOCKS.registerSimpleBlock("obj_model",
+            solid().noOcclusion());
+
+    /** Has a model this mod makes in code, from a model loader of its own: a slope, and the bottom under it. */
+    private static final DeferredBlock<Block> CODE_MODEL = BLOCKS.registerSimpleBlock("code_model",
+            solid().noOcclusion());
+
     /** Throws when asked for its shape with no world to look at, as blocks from mods can. */
     private static final DeferredBlock<Block> FRAGILE = BLOCKS.registerBlock("fragile", FragileBlock::new,
             solid().dynamicShape().noOcclusion());
@@ -82,10 +113,52 @@ public final class TestMod {
         BLOCKS.register(modBus);
         BLOCK_ENTITIES.register(modBus);
         modBus.addListener(TestMod::registerRenderers);
+        modBus.addListener(TestMod::registerLoaders);
     }
 
     private static void registerRenderers(EntityRenderersEvent.RegisterRenderers event) {
-        event.registerBlockEntityRenderer(RENDER_ONLY_ENTITY.get(), NothingRenderer::new);
+        event.registerBlockEntityRenderer(RENDER_ONLY_ENTITY.get(), BoxRenderer::new);
+    }
+
+    private static void registerLoaders(ModelEvent.RegisterGeometryLoaders event) {
+        event.register(ResourceLocation.fromNamespaceAndPath(ID, "code_model"), CodeModelLoader.INSTANCE);
+    }
+
+    private enum CodeModelLoader implements IGeometryLoader<CodeModel> {
+        INSTANCE;
+
+        @Override
+        public CodeModel read(JsonObject json, JsonDeserializationContext context) {
+            return new CodeModel();
+        }
+    }
+
+    private static final class CodeModel implements IUnbakedGeometry<CodeModel> {
+        @Override
+        public BakedModel bake(IGeometryBakingContext context, ModelBaker baker,
+                               Function<Material, TextureAtlasSprite> spriteGetter, ModelState modelState,
+                               ItemOverrides overrides) {
+            TextureAtlasSprite sprite = spriteGetter.apply(context.getMaterial("particle"));
+            IModelBuilder<?> builder = IModelBuilder.of(true, true, false, context.getTransforms(), overrides, sprite,
+                    RenderTypeGroup.EMPTY);
+            builder.addCulledFace(Direction.DOWN, quad(sprite, Direction.DOWN, 0, 0, 1, 0, 0, 0, 1, 0, 0, 1, 0, 1));
+            builder.addUnculledFace(quad(sprite, Direction.UP, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0));
+            return builder.build();
+        }
+
+        private static BakedQuad quad(TextureAtlasSprite sprite, Direction direction, float... xyz) {
+            QuadBakingVertexConsumer baker = new QuadBakingVertexConsumer();
+            baker.setSprite(sprite);
+            baker.setDirection(direction);
+            baker.setShade(true);
+            float[][] uv = {{0, 0}, {0, 1}, {1, 1}, {1, 0}};
+            for (int i = 0; i < 4; i++) {
+                baker.addVertex(xyz[i * 3], xyz[i * 3 + 1], xyz[i * 3 + 2]).setColor(-1)
+                        .setUv(sprite.getU(uv[i][0]), sprite.getV(uv[i][1])).setUv2(0, 0)
+                        .setNormal(direction.getStepX(), direction.getStepY(), direction.getStepZ());
+            }
+            return baker.bakeQuad();
+        }
     }
 
     private static final class FragileBlock extends Block {
@@ -156,13 +229,36 @@ public final class TestMod {
         }
     }
 
-    private static final class NothingRenderer implements BlockEntityRenderer<RenderOnlyEntity> {
-        NothingRenderer(BlockEntityRendererProvider.Context context) {
+    /**
+     * Draws the top of a box with a texture of its own, as entity models are drawn, and a plane on the north side
+     * with a texture from the block atlas.
+     */
+    private static final class BoxRenderer implements BlockEntityRenderer<RenderOnlyEntity> {
+        private static final ResourceLocation BOX = ResourceLocation.fromNamespaceAndPath(ID,
+                "textures/entity/render_only_box.png");
+
+        BoxRenderer(BlockEntityRendererProvider.Context context) {
         }
 
         @Override
         public void render(RenderOnlyEntity entity, float partialTick, PoseStack poseStack, MultiBufferSource buffers,
                            int packedLight, int packedOverlay) {
+            PoseStack.Pose pose = poseStack.last();
+            VertexConsumer box = buffers.getBuffer(RenderType.entityCutout(BOX));
+            float[][] top = {{0.25f, 0.5f, 0.25f, 0, 0}, {0.25f, 0.5f, 0.75f, 0, 1}, {0.75f, 0.5f, 0.75f, 1, 1},
+                    {0.75f, 0.5f, 0.25f, 1, 0}};
+            for (float[] v : top) {
+                box.addVertex(pose, v[0], v[1], v[2]).setColor(-1).setUv(v[3], v[4]).setOverlay(packedOverlay)
+                        .setLight(packedLight).setNormal(pose, 0, 1, 0);
+            }
+            TextureAtlasSprite sprite = Minecraft.getInstance().getTextureAtlas(InventoryMenu.BLOCK_ATLAS)
+                    .apply(ResourceLocation.fromNamespaceAndPath(ID, "block/render_only"));
+            VertexConsumer plane = buffers.getBuffer(RenderType.cutout());
+            float[][] north = {{1, 1, 0, 0, 0}, {1, 0, 0, 0, 1}, {0, 0, 0, 1, 1}, {0, 1, 0, 1, 0}};
+            for (float[] v : north) {
+                plane.addVertex(pose, v[0], v[1], v[2]).setColor(-1).setUv(sprite.getU(v[3]), sprite.getV(v[4]))
+                        .setOverlay(packedOverlay).setLight(packedLight).setNormal(pose, 0, 0, -1);
+            }
         }
     }
 }

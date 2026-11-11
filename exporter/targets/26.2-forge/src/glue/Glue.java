@@ -1,0 +1,117 @@
+package @PACKAGE@;
+
+import com.mojang.brigadier.CommandDispatcher;
+import com.mojang.brigadier.arguments.StringArgumentType;
+import com.mojang.brigadier.context.CommandContext;
+import net.mcedit.exporter.export.Exporter;
+import net.mcedit.exporter.export.Scope;
+import net.mcedit.exporter.export.Session;
+import net.minecraft.client.Minecraft;
+import net.minecraft.commands.CommandSourceStack;
+import net.minecraft.commands.Commands;
+import net.minecraft.network.chat.Component;
+import net.minecraftforge.client.event.RegisterClientCommandsEvent;
+import net.minecraftforge.event.TickEvent;
+import net.minecraftforge.fml.ModList;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.util.ArrayList;
+import java.util.List;
+
+/** The exporter in Forge for Minecraft 26.2. Started by the boot class when the game is this version. */
+public final class Glue extends VersionGame {
+    private static final Logger LOGGER = LoggerFactory.getLogger("mcedit_exporter");
+
+    private Session session;
+
+    /** Made when first needed: from 1.21.5, NeoForge constructs mods before the game exists. */
+    private Session session() {
+        if (session == null) {
+            session = new Session(this, Minecraft.getInstance().gameDirectory.toPath(), LOGGER::info);
+        }
+        return session;
+    }
+
+    public static void start() {
+        Glue glue = new Glue();
+        // From 1.21.6 each event has a bus of its own.
+        RegisterClientCommandsEvent.BUS.addListener(glue::registerCommands);
+        TickEvent.ClientTickEvent.Post.BUS.addListener(glue::onClientTick);
+    }
+
+    @Override
+    public String loader() {
+        return "forge";
+    }
+
+    @Override
+    public String loaderVersion() {
+        return ModList.getModContainerById("forge")
+                .map(container -> container.getModInfo().getVersion().toString()).orElse(null);
+    }
+
+    @Override
+    public List<String[]> mods() {
+        List<String[]> mods = new ArrayList<>();
+        ModList.getMods().forEach(mod -> mods.add(new String[]{mod.getModId(), mod.getVersion().toString()}));
+        return mods;
+    }
+
+    private void registerCommands(RegisterClientCommandsEvent event) {
+        CommandDispatcher<CommandSourceStack> dispatcher = event.getDispatcher();
+        dispatcher.register(Commands.literal(Session.COMMAND)
+                .executes(context -> export(context, Scope.MODS))
+                .then(Commands.literal("vanilla").executes(context -> export(context, Scope.VANILLA)))
+                .then(Commands.literal("all").executes(context -> export(context, Scope.ALL)))
+                .then(Commands.literal("install")
+                        .executes(context -> install(context, null))
+                        .then(Commands.argument("folder", StringArgumentType.greedyString())
+                                .executes(context -> install(context, StringArgumentType.getString(context, "folder"))))));
+    }
+
+    private int export(CommandContext<CommandSourceStack> context, Scope scope) {
+        try {
+            Exporter.Result result = session().export(scope);
+            context.getSource().sendSuccess(() -> Component.literal(result.message()), false);
+            return result.blocks;
+        } catch (Exception e) {
+            LOGGER.error("Export failed", e);
+            context.getSource().sendFailure(Component.literal("Export failed: " + e));
+            return 0;
+        }
+    }
+
+    private int install(CommandContext<CommandSourceStack> context, String folder) {
+        try {
+            String message = session().install(folder);
+            if (message == null) {
+                context.getSource().sendFailure(Component.literal(Session.noInstallFolderMessage()));
+                return 0;
+            }
+            context.getSource().sendSuccess(() -> Component.literal(message), false);
+            return 1;
+        } catch (Exception e) {
+            LOGGER.error("Install failed", e);
+            context.getSource().sendFailure(Component.literal("Install failed: " + e));
+            return 0;
+        }
+    }
+
+    /**
+     * Exports once when asked to by a system property, then quits. Waits for the loading overlay to close, because
+     * models are not baked until then.
+     */
+    private void onClientTick(TickEvent.ClientTickEvent.Post event) {
+        if (!session().autoExportPending()) {
+            return;
+        }
+        Minecraft minecraft = Minecraft.getInstance();
+        if (minecraft.gui.overlay() != null
+                || (session().exportInWorld() ? minecraft.level == null || minecraft.gui.screen() != null : minecraft.gui.screen() == null)) {
+            return;
+        }
+        session().runAutoExport();
+        minecraft.stop();
+    }
+}

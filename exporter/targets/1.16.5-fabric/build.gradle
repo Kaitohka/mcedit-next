@@ -1,0 +1,17 @@
+plugins {
+    id 'fabric-loom' version '1.11-SNAPSHOT'
+}
+
+ext.minecraftVersion = '1.16.5'
+ext.loader = 'fabric'
+ext.javaRelease = 8
+apply from: '../shared.gradle'
+
+base.archivesName = 'mcedit_exporter-1.16.5-fabric'
+
+dependencies {
+    minecraft 'com.mojang:minecraft:1.16.5'
+    mappings loom.officialMojangMappings()
+    modImplementation 'net.fabricmc:fabric-loader:0.16.14'
+    modImplementation 'net.fabricmc.fabric-api:fabric-api:0.42.0+1.16'
+}

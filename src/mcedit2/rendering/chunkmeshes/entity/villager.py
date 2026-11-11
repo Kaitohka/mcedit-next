@@ -15,16 +15,17 @@ class ModelVillager(object):
 
     id = "Villager"
 
+    # Professions of villagers before 1.14, by number
+    professionNames = {
+        0: "farmer",
+        1: "librarian",
+        2: "priest",
+        3: "smith",
+        4: "butcher",
+    }
+
     def textureForEntity(self, entityRef):
-        prof = entityRef.Profession
-        profNames = {
-            0: "farmer",
-            1: "librarian",
-            2: "priest",
-            3: "smith",
-            4: "butcher",
-        }
-        profName = profNames.get(prof, "villager")
+        profName = self.professionNames.get(entityRef.Profession, "villager")
         return "assets/minecraft/textures/entity/villager/%s.png" % profName
 
     def __init__(self, expandOffset=0., heightOffset=0.):

@@ -1,0 +1,19 @@
+modLoader = "javafml"
+loaderVersion = "[1,)"
+license = "BSD-3-Clause"
+
+[[mods]]
+modId = "mcedit_exporter"
+version = "@VERSION@"
+displayName = "MCEdit Exporter"
+description = '''
+Exports the blocks and block entities registered in this client, so that MCEdit can display them.
+Runs on the client only and does nothing until /mcedit_export is used.
+'''
+
+[[dependencies.mcedit_exporter]]
+modId = "minecraft"
+type = "required"
+versionRange = "@NEOFORGE_VERSIONS@"
+ordering = "NONE"
+side = "CLIENT"

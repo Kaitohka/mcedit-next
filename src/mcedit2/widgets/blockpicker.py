@@ -160,6 +160,7 @@ class BlockTypePicker(QtWidgets.QDialog, Ui_blockPickerMultiple):
         self.selectedTypesModel = None
 
     def exec(self):
+        self._ensureUpdated()
         self.searchField.setFocus()
         return super(BlockTypePicker, self).exec()
 
@@ -188,7 +189,15 @@ class BlockTypePicker(QtWidgets.QDialog, Ui_blockPickerMultiple):
         :type textureAtlas: mcedit2.rendering.textureatlas.TextureAtlas
         """
         self._textureAtlas = textureAtlas
-        self.updatePicker()
+        # Listing every block state takes a while, and most pickers are never opened. It waits until one is.
+        self._needsUpdate = True
+
+    _needsUpdate = False
+
+    def _ensureUpdated(self):
+        if self._needsUpdate:
+            self._needsUpdate = False
+            self.updatePicker()
 
     @property
     def blocktypes(self):
@@ -212,10 +221,12 @@ class BlockTypePicker(QtWidgets.QDialog, Ui_blockPickerMultiple):
 
     @property
     def selectedBlocks(self):
+        self._ensureUpdated()
         return self.selectedTypesModel.selectedBlocks()
 
     @selectedBlocks.setter
     def selectedBlocks(self, val):
+        self._ensureUpdated()
         self.listWidget.setSelectedBlocks(val)
         self.selectedTypesModel.setSelectedBlocks(val)
 
@@ -224,6 +235,7 @@ class BlockTypePicker(QtWidgets.QDialog, Ui_blockPickerMultiple):
         # So we have to work around it by disconnecting from the selection change, and then
         # restoring the selection after changing the settings.
 
+        self._ensureUpdated()
         self.listWidget.blockSelectionChanged.disconnect(self.selectionDidChange)
         selectedBlocks = self.selectedBlocks
 

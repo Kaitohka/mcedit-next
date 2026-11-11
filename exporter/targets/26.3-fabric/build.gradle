@@ -1,0 +1,17 @@
+plugins {
+    // From 26.1 the game is not obfuscated, so the mod is built with the game's own names and nothing is remapped.
+    id 'net.fabricmc.fabric-loom' version '1.15.5'
+}
+
+ext.minecraftVersion = '26.3'
+ext.loader = 'fabric'
+ext.javaRelease = 25
+apply from: '../shared.gradle'
+
+base.archivesName = 'mcedit_exporter-26.3-fabric'
+
+dependencies {
+    minecraft 'com.mojang:minecraft:26.3'
+    implementation 'net.fabricmc:fabric-loader:0.20.1'
+    implementation 'net.fabricmc.fabric-api:fabric-api:0.165.2+26.3'
+}

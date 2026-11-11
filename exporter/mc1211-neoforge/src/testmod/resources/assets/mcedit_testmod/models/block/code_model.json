@@ -1,0 +1,6 @@
+{
+  "loader": "mcedit_testmod:code_model",
+  "textures": {
+    "particle": "mcedit_testmod:block/code_model"
+  }
+}

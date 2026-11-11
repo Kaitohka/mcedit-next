@@ -1,0 +1,535 @@
+{
+  "blockEntities": [
+    {
+      "id": "minecraft:banner",
+      "blocks": [
+        "minecraft:black_banner",
+        "minecraft:black_wall_banner",
+        "minecraft:blue_banner",
+        "minecraft:blue_wall_banner",
+        "minecraft:brown_banner",
+        "minecraft:brown_wall_banner",
+        "minecraft:cyan_banner",
+        "minecraft:cyan_wall_banner",
+        "minecraft:gray_banner",
+        "minecraft:gray_wall_banner",
+        "minecraft:green_banner",
+        "minecraft:green_wall_banner",
+        "minecraft:light_blue_banner",
+        "minecraft:light_blue_wall_banner",
+        "minecraft:light_gray_banner",
+        "minecraft:light_gray_wall_banner",
+        "minecraft:lime_banner",
+        "minecraft:lime_wall_banner",
+        "minecraft:magenta_banner",
+        "minecraft:magenta_wall_banner",
+        "minecraft:orange_banner",
+        "minecraft:orange_wall_banner",
+        "minecraft:pink_banner",
+        "minecraft:pink_wall_banner",
+        "minecraft:purple_banner",
+        "minecraft:purple_wall_banner",
+        "minecraft:red_banner",
+        "minecraft:red_wall_banner",
+        "minecraft:white_banner",
+        "minecraft:white_wall_banner",
+        "minecraft:yellow_banner",
+        "minecraft:yellow_wall_banner"
+      ],
+      "hasRenderer": true,
+      "defaultNbt": "{components:{},id:\"minecraft:banner\",x:0,y:0,z:0}"
+    },
+    {
+      "id": "minecraft:barrel",
+      "blocks": [
+        "minecraft:barrel"
+      ],
+      "hasRenderer": false,
+      "defaultNbt": "{Items:[],components:{},id:\"minecraft:barrel\",x:0,y:0,z:0}"
+    },
+    {
+      "id": "minecraft:beacon",
+      "blocks": [
+        "minecraft:beacon"
+      ],
+      "hasRenderer": true,
+      "defaultNbt": "{Levels:0,components:{},id:\"minecraft:beacon\",x:0,y:0,z:0}"
+    },
+    {
+      "id": "minecraft:beehive",
+      "blocks": [
+        "minecraft:bee_nest",
+        "minecraft:beehive"
+      ],
+      "hasRenderer": false,
+      "defaultNbt": "{bees:[],components:{},id:\"minecraft:beehive\",x:0,y:0,z:0}"
+    },
+    {
+      "id": "minecraft:bell",
+      "blocks": [
+        "minecraft:bell"
+      ],
+      "hasRenderer": true,
+      "defaultNbt": "{components:{},id:\"minecraft:bell\",x:0,y:0,z:0}"
+    },
+    {
+      "id": "minecraft:blast_furnace",
+      "blocks": [
+        "minecraft:blast_furnace"
+      ],
+      "hasRenderer": false,
+      "defaultNbt": "{Items:[],RecipesUsed:{},components:{},cooking_time_spent:0,cooking_total_time:0,id:\"minecraft:blast_furnace\",lit_time_remaining:0,lit_total_time:0,speed_multiplier:1.0f,x:0,y:0,z:0}"
+    },
+    {
+      "id": "minecraft:brewing_stand",
+      "blocks": [
+        "minecraft:brewing_stand"
+      ],
+      "hasRenderer": false,
+      "defaultNbt": "{BrewTime:0,Fuel:0,Items:[],components:{},id:\"minecraft:brewing_stand\",speed_multiplier:1.0f,total_brew_time:0,total_fuel:0,x:0,y:0,z:0}"
+    },
+    {
+      "id": "minecraft:brushable_block",
+      "blocks": [
+        "minecraft:suspicious_gravel",
+        "minecraft:suspicious_sand"
+      ],
+      "hasRenderer": true,
+      "defaultNbt": "{components:{},id:\"minecraft:brushable_block\",x:0,y:0,z:0}"
+    },
+    {
+      "id": "minecraft:calibrated_sculk_sensor",
+      "blocks": [
+        "minecraft:calibrated_sculk_sensor"
+      ],
+      "hasRenderer": false,
+      "defaultNbt": "{components:{},id:\"minecraft:calibrated_sculk_sensor\",last_vibration_frequency:0,listener:{event_delay:0,selector:{tick:-1L}},x:0,y:0,z:0}"
+    },
+    {
+      "id": "minecraft:campfire",
+      "blocks": [
+        "minecraft:campfire",
+        "minecraft:soul_campfire"
+      ],
+      "hasRenderer": true,
+      "defaultNbt": "{CookingTimes:[I;0,0,0,0],CookingTotalTimes:[I;0,0,0,0],Items:[],components:{},id:\"minecraft:campfire\",x:0,y:0,z:0}"
+    },
+    {
+      "id": "minecraft:chest",
+      "blocks": [
+        "minecraft:chest",
+        "minecraft:copper_chest",
+        "minecraft:exposed_copper_chest",
+        "minecraft:oxidized_copper_chest",
+        "minecraft:waxed_copper_chest",
+        "minecraft:waxed_exposed_copper_chest",
+        "minecraft:waxed_oxidized_copper_chest",
+        "minecraft:waxed_weathered_copper_chest",
+        "minecraft:weathered_copper_chest"
+      ],
+      "hasRenderer": true,
+      "defaultNbt": "{Items:[],components:{},id:\"minecraft:chest\",x:0,y:0,z:0}"
+    },
+    {
+      "id": "minecraft:chiseled_bookshelf",
+      "blocks": [
+        "minecraft:chiseled_bookshelf"
+      ],
+      "hasRenderer": false,
+      "defaultNbt": "{Items:[],components:{},id:\"minecraft:chiseled_bookshelf\",last_interacted_slot:-1,x:0,y:0,z:0}"
+    },
+    {
+      "id": "minecraft:command_block",
+      "blocks": [
+        "minecraft:chain_command_block",
+        "minecraft:command_block",
+        "minecraft:repeating_command_block"
+      ],
+      "hasRenderer": false,
+      "defaultNbt": "{Command:\"\",SuccessCount:0,TrackOutput:1b,UpdateLastExecution:1b,auto:0b,components:{},conditionMet:0b,id:\"minecraft:command_block\",powered:0b,x:0,y:0,z:0}"
+    },
+    {
+      "id": "minecraft:comparator",
+      "blocks": [
+        "minecraft:comparator"
+      ],
+      "hasRenderer": false,
+      "defaultNbt": "{OutputSignal:0,components:{},id:\"minecraft:comparator\",x:0,y:0,z:0}"
+    },
+    {
+      "id": "minecraft:conduit",
+      "blocks": [
+        "minecraft:conduit"
+      ],
+      "hasRenderer": true,
+      "defaultNbt": "{components:{},id:\"minecraft:conduit\",x:0,y:0,z:0}"
+    },
+    {
+      "id": "minecraft:copper_golem_statue",
+      "blocks": [
+        "minecraft:copper_golem_statue",
+        "minecraft:exposed_copper_golem_statue",
+        "minecraft:oxidized_copper_golem_statue",
+        "minecraft:waxed_copper_golem_statue",
+        "minecraft:waxed_exposed_copper_golem_statue",
+        "minecraft:waxed_oxidized_copper_golem_statue",
+        "minecraft:waxed_weathered_copper_golem_statue",
+        "minecraft:weathered_copper_golem_statue"
+      ],
+      "hasRenderer": true,
+      "defaultNbt": "{components:{},id:\"minecraft:copper_golem_statue\",x:0,y:0,z:0}"
+    },
+    {
+      "id": "minecraft:crafter",
+      "blocks": [
+        "minecraft:crafter"
+      ],
+      "hasRenderer": false,
+      "defaultNbt": "{Items:[],components:{},crafting_ticks_remaining:0,disabled_slots:[I;],id:\"minecraft:crafter\",triggered:0,x:0,y:0,z:0}"
+    },
+    {
+      "id": "minecraft:creaking_heart",
+      "blocks": [
+        "minecraft:creaking_heart"
+      ],
+      "hasRenderer": false,
+      "defaultNbt": "{components:{},id:\"minecraft:creaking_heart\",x:0,y:0,z:0}"
+    },
+    {
+      "id": "minecraft:daylight_detector",
+      "blocks": [
+        "minecraft:daylight_detector"
+      ],
+      "hasRenderer": false,
+      "defaultNbt": "{components:{},id:\"minecraft:daylight_detector\",x:0,y:0,z:0}"
+    },
+    {
+      "id": "minecraft:decorated_pot",
+      "blocks": [
+        "minecraft:decorated_pot"
+      ],
+      "hasRenderer": true,
+      "defaultNbt": "{components:{},id:\"minecraft:decorated_pot\",x:0,y:0,z:0}"
+    },
+    {
+      "id": "minecraft:dispenser",
+      "blocks": [
+        "minecraft:dispenser"
+      ],
+      "hasRenderer": false,
+      "defaultNbt": "{Items:[],components:{},id:\"minecraft:dispenser\",x:0,y:0,z:0}"
+    },
+    {
+      "id": "minecraft:dropper",
+      "blocks": [
+        "minecraft:dropper"
+      ],
+      "hasRenderer": false,
+      "defaultNbt": "{Items:[],components:{},id:\"minecraft:dropper\",x:0,y:0,z:0}"
+    },
+    {
+      "id": "minecraft:enchanting_table",
+      "blocks": [
+        "minecraft:enchanting_table"
+      ],
+      "hasRenderer": true,
+      "defaultNbt": "{components:{},id:\"minecraft:enchanting_table\",x:0,y:0,z:0}"
+    },
+    {
+      "id": "minecraft:end_gateway",
+      "blocks": [
+        "minecraft:end_gateway"
+      ],
+      "hasRenderer": true,
+      "defaultNbt": "{Age:0L,components:{},id:\"minecraft:end_gateway\",x:0,y:0,z:0}"
+    },
+    {
+      "id": "minecraft:end_portal",
+      "blocks": [
+        "minecraft:end_portal"
+      ],
+      "hasRenderer": true,
+      "defaultNbt": "{components:{},id:\"minecraft:end_portal\",x:0,y:0,z:0}"
+    },
+    {
+      "id": "minecraft:ender_chest",
+      "blocks": [
+        "minecraft:ender_chest"
+      ],
+      "hasRenderer": true,
+      "defaultNbt": "{components:{},id:\"minecraft:ender_chest\",x:0,y:0,z:0}"
+    },
+    {
+      "id": "minecraft:furnace",
+      "blocks": [
+        "minecraft:furnace"
+      ],
+      "hasRenderer": false,
+      "defaultNbt": "{Items:[],RecipesUsed:{},components:{},cooking_time_spent:0,cooking_total_time:0,id:\"minecraft:furnace\",lit_time_remaining:0,lit_total_time:0,speed_multiplier:1.0f,x:0,y:0,z:0}"
+    },
+    {
+      "id": "minecraft:hanging_sign",
+      "blocks": [
+        "minecraft:acacia_hanging_sign",
+        "minecraft:acacia_wall_hanging_sign",
+        "minecraft:bamboo_hanging_sign",
+        "minecraft:bamboo_wall_hanging_sign",
+        "minecraft:birch_hanging_sign",
+        "minecraft:birch_wall_hanging_sign",
+        "minecraft:cherry_hanging_sign",
+        "minecraft:cherry_wall_hanging_sign",
+        "minecraft:crimson_hanging_sign",
+        "minecraft:crimson_wall_hanging_sign",
+        "minecraft:dark_oak_hanging_sign",
+        "minecraft:dark_oak_wall_hanging_sign",
+        "minecraft:jungle_hanging_sign",
+        "minecraft:jungle_wall_hanging_sign",
+        "minecraft:mangrove_hanging_sign",
+        "minecraft:mangrove_wall_hanging_sign",
+        "minecraft:oak_hanging_sign",
+        "minecraft:oak_wall_hanging_sign",
+        "minecraft:pale_oak_hanging_sign",
+        "minecraft:pale_oak_wall_hanging_sign",
+        "minecraft:poplar_hanging_sign",
+        "minecraft:poplar_wall_hanging_sign",
+        "minecraft:spruce_hanging_sign",
+        "minecraft:spruce_wall_hanging_sign",
+        "minecraft:warped_hanging_sign",
+        "minecraft:warped_wall_hanging_sign"
+      ],
+      "hasRenderer": true,
+      "defaultNbt": "{back_text:{color:\"black\",has_glowing_text:0b,messages:[\"\",\"\",\"\",\"\"]},components:{},front_text:{color:\"black\",has_glowing_text:0b,messages:[\"\",\"\",\"\",\"\"]},id:\"minecraft:hanging_sign\",is_waxed:0b,x:0,y:0,z:0}"
+    },
+    {
+      "id": "minecraft:hopper",
+      "blocks": [
+        "minecraft:hopper"
+      ],
+      "hasRenderer": false,
+      "defaultNbt": "{Items:[],TransferCooldown:-1,components:{},id:\"minecraft:hopper\",x:0,y:0,z:0}"
+    },
+    {
+      "id": "minecraft:jigsaw",
+      "blocks": [
+        "minecraft:jigsaw"
+      ],
+      "hasRenderer": false,
+      "defaultNbt": "{components:{},final_state:\"minecraft:air\",id:\"minecraft:jigsaw\",joint:\"rollable\",name:\"minecraft:empty\",placement_priority:0,pool:\"minecraft:empty\",selection_priority:0,target:\"minecraft:empty\",x:0,y:0,z:0}"
+    },
+    {
+      "id": "minecraft:jukebox",
+      "blocks": [
+        "minecraft:jukebox"
+      ],
+      "hasRenderer": false,
+      "defaultNbt": "{components:{},id:\"minecraft:jukebox\",x:0,y:0,z:0}"
+    },
+    {
+      "id": "minecraft:lectern",
+      "blocks": [
+        "minecraft:lectern"
+      ],
+      "hasRenderer": true,
+      "defaultNbt": "{components:{},id:\"minecraft:lectern\",x:0,y:0,z:0}"
+    },
+    {
+      "id": "minecraft:mob_spawner",
+      "blocks": [
+        "minecraft:spawner"
+      ],
+      "hasRenderer": true,
+      "defaultNbt": "{Delay:20s,MaxNearbyEntities:6s,MaxSpawnDelay:800s,MinSpawnDelay:200s,RequiredPlayerRange:16s,SpawnCount:4s,SpawnPotentials:[],SpawnRange:4s,components:{},id:\"minecraft:mob_spawner\",x:0,y:0,z:0}"
+    },
+    {
+      "id": "minecraft:piston",
+      "blocks": [
+        "minecraft:moving_piston"
+      ],
+      "hasRenderer": true
+    },
+    {
+      "id": "minecraft:potent_sulfur",
+      "blocks": [
+        "minecraft:potent_sulfur"
+      ],
+      "hasRenderer": false,
+      "defaultNbt": "{components:{},countdown:-1,id:\"minecraft:potent_sulfur\",x:0,y:0,z:0}"
+    },
+    {
+      "id": "minecraft:sculk_catalyst",
+      "blocks": [
+        "minecraft:sculk_catalyst"
+      ],
+      "hasRenderer": false,
+      "defaultNbt": "{components:{},cursors:[],id:\"minecraft:sculk_catalyst\",x:0,y:0,z:0}"
+    },
+    {
+      "id": "minecraft:sculk_sensor",
+      "blocks": [
+        "minecraft:sculk_sensor"
+      ],
+      "hasRenderer": false,
+      "defaultNbt": "{components:{},id:\"minecraft:sculk_sensor\",last_vibration_frequency:0,listener:{event_delay:0,selector:{tick:-1L}},x:0,y:0,z:0}"
+    },
+    {
+      "id": "minecraft:sculk_shrieker",
+      "blocks": [
+        "minecraft:sculk_shrieker"
+      ],
+      "hasRenderer": false,
+      "defaultNbt": "{components:{},id:\"minecraft:sculk_shrieker\",listener:{event_delay:0,selector:{tick:-1L}},warning_level:0,x:0,y:0,z:0}"
+    },
+    {
+      "id": "minecraft:shelf",
+      "blocks": [
+        "minecraft:acacia_shelf",
+        "minecraft:bamboo_shelf",
+        "minecraft:birch_shelf",
+        "minecraft:cherry_shelf",
+        "minecraft:crimson_shelf",
+        "minecraft:dark_oak_shelf",
+        "minecraft:jungle_shelf",
+        "minecraft:mangrove_shelf",
+        "minecraft:oak_shelf",
+        "minecraft:pale_oak_shelf",
+        "minecraft:poplar_shelf",
+        "minecraft:spruce_shelf",
+        "minecraft:warped_shelf"
+      ],
+      "hasRenderer": true,
+      "defaultNbt": "{Items:[],align_items_to_bottom:0b,components:{},id:\"minecraft:shelf\",x:0,y:0,z:0}"
+    },
+    {
+      "id": "minecraft:shulker_box",
+      "blocks": [
+        "minecraft:black_shulker_box",
+        "minecraft:blue_shulker_box",
+        "minecraft:brown_shulker_box",
+        "minecraft:cyan_shulker_box",
+        "minecraft:gray_shulker_box",
+        "minecraft:green_shulker_box",
+        "minecraft:light_blue_shulker_box",
+        "minecraft:light_gray_shulker_box",
+        "minecraft:lime_shulker_box",
+        "minecraft:magenta_shulker_box",
+        "minecraft:orange_shulker_box",
+        "minecraft:pink_shulker_box",
+        "minecraft:purple_shulker_box",
+        "minecraft:red_shulker_box",
+        "minecraft:shulker_box",
+        "minecraft:white_shulker_box",
+        "minecraft:yellow_shulker_box"
+      ],
+      "hasRenderer": true,
+      "defaultNbt": "{components:{},id:\"minecraft:shulker_box\",x:0,y:0,z:0}"
+    },
+    {
+      "id": "minecraft:sign",
+      "blocks": [
+        "minecraft:acacia_sign",
+        "minecraft:acacia_wall_sign",
+        "minecraft:bamboo_sign",
+        "minecraft:bamboo_wall_sign",
+        "minecraft:birch_sign",
+        "minecraft:birch_wall_sign",
+        "minecraft:cherry_sign",
+        "minecraft:cherry_wall_sign",
+        "minecraft:crimson_sign",
+        "minecraft:crimson_wall_sign",
+        "minecraft:dark_oak_sign",
+        "minecraft:dark_oak_wall_sign",
+        "minecraft:jungle_sign",
+        "minecraft:jungle_wall_sign",
+        "minecraft:mangrove_sign",
+        "minecraft:mangrove_wall_sign",
+        "minecraft:oak_sign",
+        "minecraft:oak_wall_sign",
+        "minecraft:pale_oak_sign",
+        "minecraft:pale_oak_wall_sign",
+        "minecraft:poplar_sign",
+        "minecraft:poplar_wall_sign",
+        "minecraft:spruce_sign",
+        "minecraft:spruce_wall_sign",
+        "minecraft:warped_sign",
+        "minecraft:warped_wall_sign"
+      ],
+      "hasRenderer": true,
+      "defaultNbt": "{back_text:{color:\"black\",has_glowing_text:0b,messages:[\"\",\"\",\"\",\"\"]},components:{},front_text:{color:\"black\",has_glowing_text:0b,messages:[\"\",\"\",\"\",\"\"]},id:\"minecraft:sign\",is_waxed:0b,x:0,y:0,z:0}"
+    },
+    {
+      "id": "minecraft:skull",
+      "blocks": [
+        "minecraft:creeper_head",
+        "minecraft:creeper_wall_head",
+        "minecraft:dragon_head",
+        "minecraft:dragon_wall_head",
+        "minecraft:piglin_head",
+        "minecraft:piglin_wall_head",
+        "minecraft:player_head",
+        "minecraft:player_wall_head",
+        "minecraft:skeleton_skull",
+        "minecraft:skeleton_wall_skull",
+        "minecraft:wither_skeleton_skull",
+        "minecraft:wither_skeleton_wall_skull",
+        "minecraft:zombie_head",
+        "minecraft:zombie_wall_head"
+      ],
+      "hasRenderer": true,
+      "defaultNbt": "{components:{},id:\"minecraft:skull\",x:0,y:0,z:0}"
+    },
+    {
+      "id": "minecraft:smoker",
+      "blocks": [
+        "minecraft:smoker"
+      ],
+      "hasRenderer": false,
+      "defaultNbt": "{Items:[],RecipesUsed:{},components:{},cooking_time_spent:0,cooking_total_time:0,id:\"minecraft:smoker\",lit_time_remaining:0,lit_total_time:0,speed_multiplier:1.0f,x:0,y:0,z:0}"
+    },
+    {
+      "id": "minecraft:structure_block",
+      "blocks": [
+        "minecraft:structure_block"
+      ],
+      "hasRenderer": true,
+      "defaultNbt": "{author:\"\",components:{},id:\"minecraft:structure_block\",ignoreEntities:1b,integrity:1.0f,metadata:\"\",mirror:\"NONE\",mode:\"LOAD\",name:\"\",posX:0,posY:1,posZ:0,powered:0b,rotation:\"NONE\",seed:0L,showair:0b,showboundingbox:1b,sizeX:0,sizeY:0,sizeZ:0,strict:0b,x:0,y:0,z:0}"
+    },
+    {
+      "id": "minecraft:test_block",
+      "blocks": [
+        "minecraft:test_block"
+      ],
+      "hasRenderer": false,
+      "defaultNbt": "{components:{},id:\"minecraft:test_block\",message:\"\",mode:\"start\",powered:0b,x:0,y:0,z:0}"
+    },
+    {
+      "id": "minecraft:test_instance_block",
+      "blocks": [
+        "minecraft:test_instance_block"
+      ],
+      "hasRenderer": true,
+      "defaultNbt": "{components:{},data:{ignore_entities:0b,rotation:\"none\",size:[I;0,0,0],status:\"cleared\"},id:\"minecraft:test_instance_block\",x:0,y:0,z:0}"
+    },
+    {
+      "id": "minecraft:trapped_chest",
+      "blocks": [
+        "minecraft:trapped_chest"
+      ],
+      "hasRenderer": true,
+      "defaultNbt": "{Items:[],components:{},id:\"minecraft:trapped_chest\",x:0,y:0,z:0}"
+    },
+    {
+      "id": "minecraft:trial_spawner",
+      "blocks": [
+        "minecraft:trial_spawner"
+      ],
+      "hasRenderer": true,
+      "defaultNbt": "{components:{},id:\"minecraft:trial_spawner\",x:0,y:0,z:0}"
+    },
+    {
+      "id": "minecraft:vault",
+      "blocks": [
+        "minecraft:vault"
+      ]
+    }
+  ]
+}
