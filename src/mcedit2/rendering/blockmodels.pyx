@@ -654,6 +654,7 @@ cdef class BlockModels(object):
                 elif loader in OBJ_LOADERS and isinstance(modelDict.get("model"), str):
                     for k, v in (modelDict.get("textures") or {}).items():
                         textureVars.setdefault(k, v.get("sprite", "") if isinstance(v, dict) else v)
+                    self._parentTextures(modelDict, textureVars)
                     return self._loadObjModel(block, modelDict, textureVars, objVisibility, objTransform,
                                               variantXrot, variantYrot)
                 elif loader is not None:
@@ -662,6 +663,7 @@ cdef class BlockModels(object):
                     if isinstance(modelDict.get("model"), str):
                         for k, v in (modelDict.get("textures") or {}).items():
                             textureVars.setdefault(k, v.get("sprite", "") if isinstance(v, dict) else v)
+                        self._parentTextures(modelDict, textureVars)
                         quads = self._loadModelFile(block, modelDict, textureVars, objVisibility, objTransform,
                                                     variantXrot, variantYrot)
                         if quads is not None:
@@ -744,6 +746,30 @@ cdef class BlockModels(object):
                       block.nameAndState, allElements, textureVars)
 
         return allQuads
+
+    def _parentTextures(self, dict modelDict, dict textureVars):
+        """
+        Add the textures the model's parents give to textureVars, where the model and those before it gave none
+        of that name. A model read from a file, as an OBJ model, has its file named by the model nearest the
+        block, but its materials can name textures that a parent gives, as those of Create's wheels do.
+        """
+        for i in range(MAX_TEXTURE_RECURSIONS):
+            parentName = modelDict.get("parent")
+            if parentName is None or parentName.startswith("builtin/") or parentName.startswith("minecraft:builtin/"):
+                return
+            try:
+                modelDict = self._getBlockModel(parentName)
+            except Exception as e:
+                log.info("Could not read the parent model %s for its textures: %r", parentName, e)
+                return
+            for k, v in (modelDict.get("textures") or {}).items():
+                if k in textureVars:
+                    continue
+                if isinstance(v, dict):
+                    v = v.get("sprite", "")
+                if v.startswith("#"):
+                    v = textureVars.get(v[1:], v)
+                textureVars[k] = v
 
     def _blockTint(self, block):
         """ The color of a block's tinted faces as (r, g, b), and the kind of biome color it takes. """

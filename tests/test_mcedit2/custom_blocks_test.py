@@ -100,7 +100,8 @@ def writeAwkwardPack(folder):
               block("partly", "minecraft:block/gold_block"),
               block("own_box", "minecraft:block/gold_block"),
               block("composite", "minecraft:block/gold_block"),
-              block("obj", "minecraft:block/gold_block")]
+              block("obj", "minecraft:block/gold_block"),
+              block("obj_parent_textures", "minecraft:block/gold_block")]
     libraryTests.writePack(folder, blocks)
     for name in "made_in_code", "made_in_code_no_texture":
         writeAsset(folder, "assets/demomod/blockstates/%s.json" % name, {"variants": {"": {"model": "demomod:block/from_code"}}})
@@ -124,6 +125,18 @@ def writeAwkwardPack(folder):
         "visibility": {"hidden": False}})
     writeAsset(folder, "assets/demomod/models/block/obj.json", {
         "parent": "minecraft:block/block", "loader": "neoforge:obj", "model": "demomod:models/block/obj.obj"})
+    # An OBJ model whose material names a texture that only the model's parent gives, as Create's wheels do.
+    writeAsset(folder, "assets/demomod/blockstates/obj_parent_textures.json",
+               {"variants": {"": {"model": "demomod:block/wheel/block"}}})
+    writeAsset(folder, "assets/demomod/models/block/wheel/block.json", {
+        "parent": "demomod:block/wheel/textures", "loader": "neoforge:obj", "flip_v": True,
+        "model": "demomod:models/block/wheel/wheel.obj"})
+    writeAsset(folder, "assets/demomod/models/block/wheel/textures.json", {
+        "parent": "minecraft:block/block", "textures": {"plates": "minecraft:block/dirt"}})
+    writeAsset(folder, "assets/demomod/models/block/wheel/wheel.obj",
+               b"mtllib wheel.mtl\nv 0 0 0\nv 1 0 0\nv 1 0 1\nv 0 0 1\nvt 0 0\nvt 1 0\nvt 1 1\nvt 0 1\n"
+               b"usemtl plates\nf 1/1 2/2 3/3 4/4\n")
+    writeAsset(folder, "assets/demomod/models/block/wheel/wheel.mtl", b"newmtl plates\nmap_Kd #plates\n")
     return folder
 
 
@@ -176,6 +189,14 @@ def testCompositePartsUseTheirOwnTextures(awkward):
     blocktypes, models = awkward
     assert models.firstTextures["demomod:composite[mode=off]"] == "assets/minecraft/textures/block/stone.png"
     assert "MCEDIT_UNKNOWN" not in models.firstTextures["demomod:own_box[mode=off]"]
+
+
+@needsJar
+def testObjModelTakesTexturesFromItsParents(awkward):
+    blocktypes, models = awkward
+    block = blocktypes["demomod:obj_parent_textures[mode=off]"]
+    assert models.quadCount(block.ID, block.meta) == 1
+    assert models.firstTextures[block.nameAndState] == "assets/minecraft/textures/block/dirt.png"
 
 
 # --- Definitions ---
