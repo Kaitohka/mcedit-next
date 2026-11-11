@@ -88,7 +88,7 @@ the game offline.
 
 ## Use
 
-Put the jar in the `mods` folder, enter any world, then run one of:
+A built jar is on the project's Releases page. Put the jar in the `mods` folder, enter any world, then run one of:
 
 ```text
 /mcedit_export            blocks from mods only

@@ -8,7 +8,7 @@
 | [第二次](#第二次升级2026-11-10) | 2026-11-10 | 一个导出模组 jar 覆盖 124 个“版本 × 加载器”组合；模组方块直接取游戏画出的面；连接纹理 |
 | [第一次](#第一次升级2026-11-08) | 2026-11-08 | 1.7.10 到 26.3 的 76 个正式版，都能打开、显示、保存 |
 
-> Releases 里的 2.0.0 alpha 1 压缩包是首发时打的，不含这些升级。要用新功能，请按 [DEVELOPMENT.md](DEVELOPMENT.md) 从源码运行，导出模组按 [exporter/README.md](exporter/README.md) 构建。
+> Releases 里的 2.0.0 alpha 2 包含下面的全部升级，同一页还有导出模组的 jar。2.0.0 alpha 1 是首发版本，不含这些升级。
 
 更细的技术记录在 [PLAN_CROSS_VERSION.md](PLAN_CROSS_VERSION.md) 第 7 节，导出模组的用法和格式在 [exporter/README.md](exporter/README.md)。
 

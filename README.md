@@ -33,7 +33,7 @@ McEdit Next 是 [MCEdit 2](https://github.com/mcedit/mcedit2) 的重置版本。
 
 1. 在 [Releases](../../releases) 下载最新的 Windows 压缩包，解压后运行 `mcedit2.exe`。压缩包可能比源码旧，它包含哪些升级见 [CHANGELOG.md](CHANGELOG.md)；要用最新的功能，按 [DEVELOPMENT.md](DEVELOPMENT.md) 从源码运行。
 2. 首次启动时，MCEdit 需要 Minecraft 客户端来读取方块模型和贴图。它会在本机的 `.minecraft` 里查找；找不到时，会询问是否从 Mojang 下载这个世界所用版本的客户端（约 20–60 MB）。
-3. 模组方块的显示方法，见 [exporter/README.md](exporter/README.md)。
+3. 要显示模组方块，在 [Releases](../../releases) 下载导出模组的 jar，用法见 [exporter/README.md](exporter/README.md)。
 
 压缩包不含 Minecraft 客户端文件，客户端文件归 Mojang 所有。导出模组生成的方块包含有各模组作者的文件，请只自己使用，不要公开发布。
 
